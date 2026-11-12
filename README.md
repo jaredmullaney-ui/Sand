@@ -2,7 +2,7 @@
 
 A real-time sand tray for phones and tablets, in the browser. Draw in it with your fingers, tilt or shake the device, and the sand slides, piles up and avalanches like the real thing.
 
-**Open it:** https://jaredmullaney-ui.github.io/sand/ (on iPhone, tap the screen once and allow motion access when asked).
+**Open it:** https://jaredmullaney-ui.github.io/Sand/ (on iPhone, tap the screen once and allow motion access when asked).
 
 ## What you can do
 
