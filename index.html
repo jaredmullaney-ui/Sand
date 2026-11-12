@@ -393,23 +393,26 @@ void main(){
   o=vec4(m,k,mv,1.);
 }`;
 
-/* Procedural grain texture: three overlapping layers of irregular, mineral-coloured grains */
+/* Procedural grain texture: three overlapping layers of irregular, mineral-coloured grains.
+   o0 = sqrt(linear albedo), grain height;  o1 = (rand, rand, translucency, dome) */
 const FS_GRAIN = HDR + `
 layout(location=0) out vec4 o0;
 layout(location=1) out vec4 o1;
 uniform float uSize;
 vec4 h4(vec2 p){ vec4 p4=fract(vec4(p.xyxy)*vec4(.1031,.1030,.0973,.1099)); p4+=dot(p4,p4.wzxy+33.33); return fract((p4.xxyz+p4.yzzw)*p4.zywx); }
-vec3 palette(float r, float j){
-  vec3 c;
-  if(r<0.34) c=vec3(0.86,0.74,0.57);
-  else if(r<0.56) c=vec3(0.78,0.62,0.44);
-  else if(r<0.68) c=vec3(0.94,0.90,0.82);
-  else if(r<0.78) c=vec3(0.82,0.56,0.37);
-  else if(r<0.87) c=vec3(0.58,0.43,0.30);
-  else if(r<0.935) c=vec3(0.60,0.58,0.55);
-  else if(r<0.975) c=vec3(0.36,0.30,0.25);
-  else c=vec3(0.11,0.10,0.10);
-  return c*(0.86+0.28*j);
+// mineral mix of a warm quartz sand (sRGB as seen under neutral light); returns linear albedo
+vec3 palette(float r, float j, out float tr){
+  vec3 c; tr=0.;
+  if(r<0.34){ c=vec3(0.80,0.69,0.54); tr=0.55; }        // tan quartz
+  else if(r<0.54){ c=vec3(0.78,0.65,0.50); tr=0.45; }   // honey, iron-stained quartz
+  else if(r<0.64){ c=vec3(0.86,0.81,0.71); tr=1.; }     // pale, clear quartz
+  else if(r<0.77){ c=vec3(0.83,0.74,0.61); tr=0.4; }    // buff
+  else if(r<0.84){ c=vec3(0.80,0.63,0.50); tr=0.2; }    // pink / orange feldspar
+  else if(r<0.92){ c=vec3(0.69,0.56,0.43); }            // brown
+  else if(r<0.97){ c=vec3(0.70,0.66,0.60); }            // grey lithic
+  else if(r<0.988){ c=vec3(0.46,0.38,0.30); }           // dark brown
+  else { c=vec3(0.22,0.20,0.18); }                      // black (magnetite, hornblende)
+  return pow(c*(0.92+0.16*j), vec3(2.2));
 }
 void main(){
   vec2 q=gl_FragCoord.xy;
@@ -425,27 +428,27 @@ void main(){
       vec2 d=q-ctr;
       float ang=r.z*6.2832; float ca=cos(ang), sa=sin(ang);
       d=vec2(ca*d.x+sa*d.y, -sa*d.x+ca*d.y);
-      d.y/= (0.68+0.32*r.w);
-      float rad=cs*(0.36+0.30*r2.x);
+      d.y/= (0.70+0.30*r.w);
+      float rad=cs*(0.52+0.22*r2.x);
       float th=atan(d.y,d.x);
-      rad*=1.+0.10*sin(th*3.+r2.y*6.28)+0.06*sin(th*5.+r2.z*6.28)+0.035*sin(th*9.+r2.w*6.28);
+      rad*=1.+0.10*sin(th*3.+r2.y*6.28)+0.06*sin(th*5.+r2.z*6.28)+0.03*sin(th*9.+r2.w*6.28);
       float dd=length(d)/rad;
       if(dd<1.){
         float dome=sqrt(1.-dd*dd);
-        float hgt=0.30*r2.w + 0.70*dome*(0.75+0.25*r.x);
+        float hgt=0.25*r2.w + 0.75*dome*(0.75+0.25*r.x);
         if(hgt>best){
           best=hgt;
           vec4 r3=h4(cw+19.7);
-          col=palette(r3.x, r3.y);
-          // inner mottling and a slightly brighter crown
-          col*=0.9+0.1*sin(dot(d,vec2(1.7,2.3))/rad*3.+r3.z*6.)+0.12*dome;
-          float quartz = (r3.x<0.34||(r3.x>=0.56&&r3.x<0.68)) && r3.w<0.55 ? 1. : 0.;
-          info=vec4(r3.z, r3.w, quartz, dome);
+          float tr;
+          col=palette(r3.x, r3.y, tr);
+          // inner mottling (mineral inclusions, iron staining)
+          col*=0.93+0.07*sin(dot(d,vec2(1.7,2.3))/rad*3.+r3.z*6.)+0.05*sin(dot(d,vec2(-2.9,1.1))/rad*4.+r3.w*9.);
+          info=vec4(r3.z, r3.w, tr, dome);
         }
       }
     }
   }
-  if(best<0.){ best=0.; col=vec3(0.30,0.24,0.18); info=vec4(0.5,0.5,0.,0.); }
+  if(best<0.){ best=0.; col=vec3(0.22,0.16,0.10); info=vec4(0.5,0.5,0.,0.); }
   o0=vec4(sqrt(clamp(col,0.,1.)), clamp(best,0.,1.));
   o1=info;
 }`;
@@ -457,8 +460,13 @@ void main(){
   vec2 q=gl_FragCoord.xy;
   float hx=H(q+vec2(1,0))-H(q-vec2(1,0));
   float hy=H(q+vec2(0,1))-H(q-vec2(0,1));
-  vec3 n=normalize(vec3(-hx*1.6,-hy*1.6,1.));
-  o=vec4(n.xy*0.5+0.5, 0., 1.);
+  vec3 n=normalize(vec3(-hx*2.8,-hy*2.8,1.));
+  // crevice occlusion between grains: how far this point sits below its surroundings
+  float h0=H(q), avg=0.;
+  for(int i=0;i<8;i++){ float a=float(i)*0.7854; avg+=H(q+vec2(cos(a),sin(a))*1.6)+H(q+vec2(cos(a+0.39),sin(a+0.39))*3.2); }
+  avg/=16.;
+  float crev=clamp(1.-(avg-h0)*1.8, 0., 1.);
+  o=vec4(n.xy*0.5+0.5, crev, 1.);
 }`;
 
 /* Final composite at screen resolution */
@@ -471,7 +479,7 @@ uniform vec2 uR0, uR1, uROff; // screen css -> natural css
 uniform float uCs;       // css px per cell
 uniform float uGS;       // grain texture px per css px
 uniform float uGT;       // grain texture size
-uniform vec3 uL;
+uniform vec3 uL, uSun, uSky;
 uniform float uTime, uExposure;
 out vec4 o;
 vec4 cubicW(float v){ vec4 n=vec4(1.,2.,3.,4.)-v; vec4 s=n*n*n; float x=s.x; float y=s.y-4.*s.x; float z=s.z-4.*s.y+6.*s.x; float w=6.-x-y-z; return vec4(x,y,z,w)*(1./6.); }
@@ -487,81 +495,113 @@ vec4 bicubic(sampler2D t, vec2 tc, vec2 size){
 }
 vec2 Bo(ivec2 p){ return texelFetch(uB, clamp(p,ivec2(0),uN-ivec2(1)), 0).xy; }
 float hash12(vec2 p){ vec3 p3=fract(vec3(p.xyx)*.1031); p3+=dot(p3,p3.yzx+33.33); return fract((p3.x+p3.y)*p3.z); }
+float vnoise(vec2 p){ vec2 i=floor(p), f=fract(p); f=f*f*(3.-2.*f);
+  return mix(mix(hash12(i),hash12(i+vec2(1,0)),f.x), mix(hash12(i+vec2(0,1)),hash12(i+vec2(1,1)),f.x), f.y); }
 vec3 aces(vec3 x){ return clamp((x*(2.51*x+0.03))/(x*(2.43*x+0.59)+0.14),0.,1.); }
+vec3 srgb(vec3 c){ return mix(c*12.92, 1.055*pow(c,vec3(1./2.4))-0.055, step(vec3(0.0031308),c)); }
+// rough diffuse (Fujii's qualitative Oren-Nayar), viewer straight above
+float roughDiffuse(vec3 N, vec3 L, float sig){
+  float nl=max(dot(N,L),0.), nv=max(N.z,0.);
+  float s=L.z-nl*nv; float t= s>0. ? max(max(nl,nv),1e-3) : 1.;
+  return nl*(1.+sig*s/t)/(1.+0.2879*sig);
+}
 void main(){
   vec2 sc=vec2(gl_FragCoord.x, uCanvas.y-gl_FragCoord.y)/uPx;
   vec2 nat=vec2(dot(uR0,sc), dot(uR1,sc))+uROff;
   vec2 tc=nat/uCs;               // texel coords (cell i spans [i,i+1])
   vec2 size=vec2(uN);
   vec4 S=bicubic(uS, tc, size);
-  vec2 SL=texture(uSL, tc/size).xy;
+  vec2 SL=bicubic(uSL, tc, size).xy;
   // grain coordinates advected with the sand
   vec2 c=tc-0.5; ivec2 i0=ivec2(floor(c)); vec2 f=c-vec2(i0);
   vec2 o00=Bo(i0), o10=Bo(i0+ivec2(1,0)), o01=Bo(i0+ivec2(0,1)), o11=Bo(i0+ivec2(1,1));
   vec2 omin=min(min(o00,o10),min(o01,o11)), omax=max(max(o00,o10),max(o01,o11));
   vec2 base=nat*uGS/uGT; float k=uCs*uGS/uGT;
-  vec2 guv; vec4 g0;
+  vec2 guv; vec4 g0; vec2 ofs;
   // grains travel with the sand; where neighbouring cells moved differently, pick the
   // highest grain among the candidates (height-blended texture bombing) so nothing smears
   vec2 dxu=dFdx(base), dyu=dFdy(base);
-  if(max(omax.x-omin.x, omax.y-omin.y)<0.03){
-    guv=base+o00*k; g0=textureGrad(uG0,guv,dxu,dyu);
+  float spread=max(omax.x-omin.x, omax.y-omin.y);
+  if(spread<0.3){
+    // gentle shear: interpolate the offset so the grains deform continuously (no doubled grains)
+    ofs=mix(mix(o00,o10,f.x), mix(o01,o11,f.x), f.y); guv=base+ofs*k; g0=textureGrad(uG0,guv,dxu,dyu);
   } else {
-    vec2 u0=base+o00*k, u1=base+o10*k, u2=base+o01*k, u3=base+o11*k;
+    // where the sand has been torn apart, grains from neighbouring cells are reshuffled (a per-cell jitter
+    // that grows with the tear) instead of showing shifted copies of the same grains as streaks
+    float jw=smoothstep(0.3,1.6,spread)*5.;
+    vec2 j00=vec2(hash12(vec2(i0)*1.31+0.7),hash12(vec2(i0)*1.73+4.1))-0.5;
+    vec2 j10=vec2(hash12(vec2(i0+ivec2(1,0))*1.31+0.7),hash12(vec2(i0+ivec2(1,0))*1.73+4.1))-0.5;
+    vec2 j01=vec2(hash12(vec2(i0+ivec2(0,1))*1.31+0.7),hash12(vec2(i0+ivec2(0,1))*1.73+4.1))-0.5;
+    vec2 j11=vec2(hash12(vec2(i0+ivec2(1,1))*1.31+0.7),hash12(vec2(i0+ivec2(1,1))*1.73+4.1))-0.5;
+    vec2 u0=base+(o00+j00*jw)*k, u1=base+(o10+j10*jw)*k, u2=base+(o01+j01*jw)*k, u3=base+(o11+j11*jw)*k;
     vec4 a0=textureGrad(uG0,u0,dxu,dyu), a1=textureGrad(uG0,u1,dxu,dyu), a2=textureGrad(uG0,u2,dxu,dyu), a3=textureGrad(uG0,u3,dxu,dyu);
-    float s0=a0.a+1.6*(1.-f.x)*(1.-f.y), s1=a1.a+1.6*f.x*(1.-f.y), s2=a2.a+1.6*(1.-f.x)*f.y, s3=a3.a+1.6*f.x*f.y;
-    guv=u0; g0=a0; float sb=s0;
-    if(s1>sb){ sb=s1; guv=u1; g0=a1; }
-    if(s2>sb){ sb=s2; guv=u2; g0=a2; }
-    if(s3>sb){ sb=s3; guv=u3; g0=a3; }
+    float s0=a0.a+0.45*(1.-f.x)*(1.-f.y), s1=a1.a+0.45*f.x*(1.-f.y), s2=a2.a+0.45*(1.-f.x)*f.y, s3=a3.a+0.45*f.x*f.y;
+    guv=u0; g0=a0; float sb=s0; ofs=o00;
+    if(s1>sb){ sb=s1; guv=u1; g0=a1; ofs=o10; }
+    if(s2>sb){ sb=s2; guv=u2; g0=a2; ofs=o01; }
+    if(s3>sb){ sb=s3; guv=u3; g0=a3; ofs=o11; }
   }
   vec4 g1=textureGrad(uG1,guv,dxu,dyu); vec4 g2=textureGrad(uG2,guv,dxu,dyu);
   float gh=g0.a;
   vec3 alb=g0.rgb*g0.rgb; // stored as sqrt
+  // broad patches of slightly darker / lighter sand that travel with the grains
+  vec2 pu=nat+ofs*uCs;
+  float pn=vnoise(pu*(1./90.))*0.55+vnoise(pu*(1./31.)+17.)*0.30+vnoise(pu*(1./11.)+5.)*0.15;
+  alb*=mix(vec3(0.86,0.88,0.92), vec3(1.08,1.05,1.0), pn);
   float h=S.x;
   vec3 Nm=normalize(vec3(-S.y,-S.z,1.));
   vec2 gn=(g2.xy*2.-1.);
-  vec3 N=normalize(Nm+vec3(gn*0.85,0.));
+  vec3 N=normalize(Nm+vec3(gn,0.));
   vec3 L=normalize(uL);
-  float sh=SL.x, ao=SL.y;
+  float sh=clamp(SL.x,0.,1.), ao=SL.y;
   // grain-scale contact shadows along the light direction
   vec2 l2=normalize(L.xy+1e-5); float tanE=L.z/max(length(L.xy),1e-3);
   float gs=1.;
   for(int k=1;k<=3;k++){
-    float dpx=float(k)*1.25;
+    float dpx=float(k)*1.15;
     float hn=textureGrad(uG0, guv + l2*dpx/uGT, dxu, dyu).a;
-    gs=min(gs, clamp(1.-(hn-gh-dpx*tanE*0.33)*2.6, 0.,1.));
+    gs=min(gs, clamp(1.-(hn-gh-dpx*tanE*0.36)*3.4, 0.,1.));
   }
-  gs=mix(1.,gs,0.85);
-  float cav=mix(0.42,1.,smoothstep(0.02,0.55,gh));
-  float ndl=max(dot(N,L),0.);
+  float cav=smoothstep(0.0,0.5,gh)*g2.z;      // 0 deep in the gaps and crevices between grains
+  float diff=roughDiffuse(N,L,0.3);
+  // let the sculpted relief read a little stronger than the grain-scale shading would give alone
   float ndlM=max(dot(Nm,L),0.);
-  vec3 sun=vec3(1.0,0.90,0.76)*3.1;
-  vec3 sky=vec3(0.50,0.60,0.78)*0.62;
-  vec3 bounce=vec3(0.75,0.58,0.40)*0.18;
-  float diff = mix(ndl, ndlM, 0.25);
-  vec3 col = alb*( sun*diff*sh*gs + (sky*(0.55+0.45*N.z)+bounce*(1.-N.z))*ao*cav );
-  // translucency of quartz: light leaks through the lit side
-  col += alb*sun*0.06*g1.z*sh*smoothstep(0.2,0.8,gh);
-  // glints from quartz facets
-  vec3 fn=normalize(vec3((g1.xy*2.-1.)*0.62,1.)+vec3(Nm.xy,0.));
+  diff*=0.55+0.45*ndlM/max(L.z,0.15);
+  // multiple scattering between grains: sand in shadow is warmer and more saturated than lit sand
+  vec3 albM=alb*mix(vec3(1.), clamp(alb*2.4,0.,1.2), 0.4);
+  vec3 col = alb*uSun*(diff*sh*gs*mix(0.6,1.,cav))
+           + albM*uSky*(0.55+0.45*N.z)*ao*mix(0.5,1.,cav);
+  // light leaking through translucent quartz on the lit side
+  col += albM*uSun*0.09*g1.z*sh*smoothstep(0.3,0.85,gh);
+  // rare tiny glints from quartz facets (twinkle as the phone tilts against the room light)
+  vec3 fn=normalize(vec3((g1.xy*2.-1.)*0.7,1.)+vec3(Nm.xy,0.));
   vec3 Hh=normalize(L+vec3(0.,0.,1.));
-  float gl=pow(max(dot(fn,Hh),0.),700.)*g1.z*smoothstep(0.45,0.9,g1.w);
-  col += vec3(1.,0.95,0.86)*gl*22.*sh*gs;
-  // tray floor (dark slate) visible where the sand is thin
-  float fn0=hash12(floor(nat*uPx*0.5));
-  vec3 floorC=vec3(0.042,0.040,0.039)*(0.9+0.2*fn0);
-  vec3 floorL=floorC*(sun*max(L.z,0.)*sh*0.55+sky*0.8);
-  // grains on the floor cast tiny shadows / leave dust
-  float dust=smoothstep(0.0,0.9,h);
-  floorL*=mix(1.,0.65,dust);
-  float cov=smoothstep(-0.06,0.06, h*1.15 - 0.55*(1.-gh) - 0.06);
-  col=mix(floorL, col, cov);
-  // subtle vignette of the lamp
+  float gl=pow(max(dot(fn,Hh),0.),900.)*step(0.8,g1.z)*smoothstep(0.6,0.95,g1.w);
+  col += uSun*gl*10.*sh*gs;
+  // tray floor (dark slate) where the sand has been pushed away
+  float cov=smoothstep(-0.06,0.06, h*0.6 - 0.62*(1.-gh) - 0.03);
+  float sd=0.05+0.35*smoothstep(0.0,0.8,h);                 // loose grains left on the floor, denser near the sand
+  float stray=step(g1.y,sd)*smoothstep(0.25,0.45,gh);
+  cov=max(cov,stray);
+  if(cov<0.999){
+    float m1=vnoise(nat*(1./70.)), m2=vnoise(nat*(1./13.)+31.), m3=hash12(floor(nat*uPx*0.6));
+    vec3 slate=vec3(0.095,0.094,0.098)*(0.72+0.38*m1+0.16*m2+0.10*m3);
+    // dust film: thick near the sand, and in faint smudges where sand has been dragged
+    float dust=clamp(smoothstep(0.0,0.9,h)*0.8 + smoothstep(0.5,0.9,vnoise(pu*(1./17.)+9.))*0.22 + 0.06, 0.,1.);
+    vec3 floorAlb=mix(slate, vec3(0.30,0.23,0.16)*0.6, dust*0.45);
+    // stray grains cast tiny shadows away from the light
+    vec2 su=guv+l2*2.0/uGT;
+    float sg=textureGrad(uG0,su,dxu,dyu).a, sid=textureGrad(uG1,su,dxu,dyu).y;
+    float sshadow=step(sid,sd)*smoothstep(0.25,0.5,sg);
+    vec3 floorL=floorAlb*(uSun*max(L.z,0.)*sh*(1.-0.75*sshadow) + uSky*ao*(1.-0.3*sshadow));
+    // a faint broad sheen of the lamp on the polished stone
+    floorL+=uSun*0.004*(0.6+0.4*m1)*sh*(1.-dust);
+    col=mix(floorL, col, cov);
+  }
+  // gentle falloff of the lamp across the tray
   vec2 vq=gl_FragCoord.xy/uCanvas-0.5;
-  col*=1.-0.18*dot(vq,vq);
-  col=aces(col*uExposure);
-  col=pow(col, vec3(1./2.2));
+  col*=1.-0.22*dot(vq,vq);
+  col=srgb(aces(col*uExposure));
   col+=(hash12(gl_FragCoord.xy+fract(uTime)*91.)-0.5)/255.;
   o=vec4(col,1.);
 }`;
@@ -579,24 +619,25 @@ void main(){
   vec2 sc=vec2(uR0.x*d.x+uR1.x*d.y, uR0.y*d.x+uR1.y*d.y); // inverse rotation (transpose)
   vec2 ndc=vec2(sc.x/uScreen.x*2.-1., 1.-sc.y/uScreen.y*2.);
   gl_Position=vec4(ndc,0.,1.);
-  gl_PointSize=max(1.5, uCs*uPx*(0.62+0.004*aP.z)*(0.8+0.4*fract(aP.w*7.3)));
+  gl_PointSize=max(1.5, uCs*uPx*(0.78+0.004*aP.z)*(0.8+0.4*fract(aP.w*7.3)));
   vSeed=aP.w; vZ=aP.z;
 }`;
 const FS_PART = HDR + `
-in float vSeed; in float vZ; uniform float uShadow; uniform vec3 uL; uniform float uExposure;
+in float vSeed; in float vZ; uniform float uShadow; uniform vec3 uL, uSun, uSky; uniform float uExposure;
 out vec4 o;
 vec3 aces(vec3 x){ return clamp((x*(2.51*x+0.03))/(x*(2.43*x+0.59)+0.14),0.,1.); }
+vec3 srgb(vec3 c){ return mix(c*12.92, 1.055*pow(c,vec3(1./2.4))-0.055, step(vec3(0.0031308),c)); }
 void main(){
   vec2 c=gl_PointCoord*2.-1.; float r=dot(c,c); if(r>1.) discard;
-  if(uShadow>0.5){ o=vec4(0.,0.,0.,0.28*(1.-r)/(1.+vZ*0.05)); return; }
+  if(uShadow>0.5){ o=vec4(0.,0.,0.,0.3*(1.-r)/(1.+vZ*0.08)); return; }
   float s=fract(vSeed*13.7);
-  vec3 alb = s<0.4?vec3(0.86,0.74,0.57):(s<0.65?vec3(0.78,0.62,0.44):(s<0.8?vec3(0.94,0.9,0.82):(s<0.93?vec3(0.58,0.43,0.3):vec3(0.15,0.13,0.12))));
-  alb*=alb;
+  vec3 alb = s<0.5?vec3(0.80,0.66,0.48):(s<0.7?vec3(0.76,0.59,0.40):(s<0.82?vec3(0.86,0.80,0.68):(s<0.95?vec3(0.62,0.46,0.32):vec3(0.15,0.13,0.12))));
+  alb=pow(alb,vec3(2.2));
   vec3 n=vec3(c.x,c.y*-1.,sqrt(max(1.-r,0.)));
   vec3 L=normalize(uL);
-  vec3 col=alb*(vec3(1.,0.9,0.76)*3.1*max(dot(n,vec3(L.x,-L.y,L.z)),0.)+vec3(0.5,0.6,0.78)*0.6);
-  col=pow(aces(col*uExposure),vec3(1./2.2));
-  o=vec4(col, 1.-smoothstep(0.7,1.,r));
+  vec3 col=alb*(uSun*max(dot(n,vec3(L.x,-L.y,L.z)),0.)+uSky*(0.6+0.4*n.z));
+  col=srgb(aces(col*uExposure));
+  o=vec4(col, 1.-smoothstep(0.6,1.,r));
 }`;
 
 let progs;
@@ -626,6 +667,15 @@ const grain2 = tex(GT,GT,gl.RGBA8,gl.RGBA,gl.UNSIGNED_BYTE,MIPLIN,gl.REPEAT);
   // grain1 holds random ids: keep its mips from blending ids too much
   gl.bindTexture(gl.TEXTURE_2D,grain1); gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_MIN_FILTER,gl.NEAREST_MIPMAP_NEAREST);
 }
+// Look of the scene: a warm lamp fixed in the room, a dim cool fill from the room, linear values
+const LOOK = {
+  elev: 27,                     // lamp elevation, degrees (low enough to rake the relief)
+  azim: [-0.62,-0.78],          // lamp direction in the tray plane when the phone lies flat
+  sun: [1.0*3.0, 0.90*3.0, 0.77*3.0],
+  sky: [0.36*0.55, 0.39*0.55, 0.45*0.55],
+  exposure: 0.64,
+  grainScale: 1.9,              // grain texture px per css px (one grain ~2.5 css px, ~0.4 mm)
+};
 
 /* ------------------------------------------------------------------ */
 /* Simulation state                                                    */
@@ -654,19 +704,27 @@ function setMapping(){
 function toNat(sx,sy){ return [R0[0]*sx+R0[1]*sy+ROFF[0], R1[0]*sx+R1[1]*sy+ROFF[1]]; }
 
 function initialHeights(nx,ny,c){
+  // A freshly levelled tray: broad, gentle unevenness at several scales (as left by smoothing the sand
+  // with a flat hand) down to fine grain-scale roughness.
+  // Lengths in css px; slopes stay well below the angle of repose so nothing moves at rest.
   const data=new Float32Array(nx*ny*4);
   const h0=P.depthPx/c;
-  const rnd=mulberry(1234);
-  // a few random low-frequency waves plus soft wind ripples
-  const waves=[]; for(let i=0;i<5;i++) waves.push([rnd()*6.28, (0.6+rnd())*0.012*c, rnd()*6.28, 0.18+rnd()*0.25]);
-  const ripAng=0.35+rnd()*0.3, ripK=2*Math.PI/(34/c);
+  const rnd=mulberry((Math.random()*4294967296)>>>0);
+  const lat=new Float32Array(256); for(let i=0;i<256;i++) lat[i]=rnd()*2-1;
+  const perm=new Uint8Array(512); for(let i=0;i<256;i++) perm[i]=i;
+  for(let i=255;i>0;i--){ const j=Math.floor(rnd()*(i+1)); const t=perm[i]; perm[i]=perm[j]; perm[j]=t; }
+  for(let i=0;i<256;i++) perm[256+i]=perm[i];
+  const vn=(x,y)=>{ const xi=Math.floor(x), yi=Math.floor(y); let fx=x-xi, fy=y-yi;
+    fx=fx*fx*(3-2*fx); fy=fy*fy*(3-2*fy);
+    const g=(i,j)=>lat[perm[(perm[(xi+i)&255]+yi+j)&255]];
+    const a=g(0,0)+(g(1,0)-g(0,0))*fx, b=g(0,1)+(g(1,1)-g(0,1))*fx; return a+(b-a)*fy; };
+  // octaves: [wavelength px, amplitude px]
+  const oct=[[320,4.6],[140,3.2],[60,1.6],[26,0.5],[11,0.14]];
   for(let y=0;y<ny;y++) for(let x=0;x<nx;x++){
-    let h=h0;
-    for(const w of waves){ h+= w[3]*Math.sin((x*Math.cos(w[0])+y*Math.sin(w[0]))*w[1]+w[2]); }
-    const warp=Math.sin(x*0.05*c/3+y*0.031*c/3)*2.2+Math.sin(y*0.021*c/3-x*0.013*c/3)*3.0;
-    const ph=(x*Math.cos(ripAng)+y*Math.sin(ripAng))*ripK+warp;
-    const s=Math.sin(ph); h+= 0.45*(s>0? s : s*0.55)*(0.6+0.4*Math.sin(x*0.02+y*0.013));
-    const i=(y*nx+x)*4; data[i]=h; data[i+1]=0; data[i+2]=0; data[i+3]=0;
+    const px=x*c, py=y*c;
+    let e=0;
+    oct.forEach(([w,a],k)=>{ e+=a*vn(px/w+k*17.3, py/w-k*9.1); });
+    const i=(y*nx+x)*4; data[i]=h0+e/c; data[i+1]=0; data[i+2]=0; data[i+3]=0;
   }
   return data;
 }
@@ -1048,9 +1106,9 @@ function frame(now){
   // light: fixed in the room, so it moves across the tray as the device tilts
   const ul=Math.hypot(Rlow[0],Rlow[1],Rlow[2])||1;
   const up=[Rlow[0]/ul, -Rlow[1]/ul, Rlow[2]/ul]; // sim frame (x right, y down, z up)
-  let d0=[-0.62,-0.78,0]; const dd=d0[0]*up[0]+d0[1]*up[1];
+  let d0=[LOOK.azim[0],LOOK.azim[1],0]; const dd=d0[0]*up[0]+d0[1]*up[1];
   let dh=[d0[0]-up[0]*dd, d0[1]-up[1]*dd, -up[2]*dd]; const dl=Math.hypot(dh[0],dh[1],dh[2])||1; dh=dh.map(v=>v/dl);
-  const E=P.lightElev*Math.PI/180;
+  const E=LOOK.elev*Math.PI/180;
   let L=[up[0]*Math.sin(E)+dh[0]*Math.cos(E), up[1]*Math.sin(E)+dh[1]*Math.cos(E), up[2]*Math.sin(E)+dh[2]*Math.cos(E)];
   if(L[2]<0.12){ L[2]=0.12; }
 
@@ -1099,8 +1157,9 @@ function frame(now){
     bindTex(progs.final,'uG0',3,grain0); bindTex(progs.final,'uG1',4,grain1); bindTex(progs.final,'uG2',5,grain2);
     gl.uniform2f(u.uCanvas,canvas.width,canvas.height); gl.uniform1f(u.uPx,px);
     gl.uniform2f(u.uR0,R0[0],R0[1]); gl.uniform2f(u.uR1,R1[0],R1[1]); gl.uniform2f(u.uROff,ROFF[0],ROFF[1]);
-    gl.uniform1f(u.uCs,cs); gl.uniform1f(u.uGS, 1.9); gl.uniform1f(u.uGT,GT);
-    gl.uniform3f(u.uL,L[0],L[1],L[2]); gl.uniform1f(u.uTime,simTime); gl.uniform1f(u.uExposure,0.62);
+    gl.uniform1f(u.uCs,cs); gl.uniform1f(u.uGS, LOOK.grainScale); gl.uniform1f(u.uGT,GT);
+    gl.uniform3f(u.uL,L[0],L[1],L[2]); gl.uniform1f(u.uTime,simTime); gl.uniform1f(u.uExposure,LOOK.exposure);
+    gl.uniform3fv(u.uSun,LOOK.sun); gl.uniform3fv(u.uSky,LOOK.sky);
   });
 
   // ---- particles ----
@@ -1108,7 +1167,8 @@ function frame(now){
   if(np>0){
     gl.useProgram(progs.part.p); const u=progs.part.u;
     gl.uniform2f(u.uR0,R0[0],R0[1]); gl.uniform2f(u.uR1,R1[0],R1[1]); gl.uniform2f(u.uROff,ROFF[0],ROFF[1]);
-    gl.uniform2f(u.uScreen,vw,vh); gl.uniform1f(u.uCs,cs); gl.uniform1f(u.uPx,px); gl.uniform3f(u.uL,L[0],L[1],L[2]); gl.uniform1f(u.uExposure,0.62);
+    gl.uniform2f(u.uScreen,vw,vh); gl.uniform1f(u.uCs,cs); gl.uniform1f(u.uPx,px); gl.uniform3f(u.uL,L[0],L[1],L[2]); gl.uniform1f(u.uExposure,LOOK.exposure);
+    gl.uniform3fv(u.uSun,LOOK.sun); gl.uniform3fv(u.uSky,LOOK.sky);
     gl.bindVertexArray(pvao); gl.bindBuffer(gl.ARRAY_BUFFER,pbuf); gl.bufferSubData(gl.ARRAY_BUFFER,0,partBuf,0,np*4);
     gl.enable(gl.BLEND); gl.blendFunc(gl.SRC_ALPHA,gl.ONE_MINUS_SRC_ALPHA);
     gl.uniform1f(u.uShadow,1); gl.drawArrays(gl.POINTS,0,np);
