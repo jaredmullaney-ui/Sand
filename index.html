@@ -1,0 +1,1150 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="theme-color" content="#1a1612">
+<title>Sandtray</title>
+<style>
+/* Layout: one full-bleed sand canvas; small smoked-glass controls float above it. Single dark look by design. */
+:root{
+  --glass: rgba(28,22,17,0.44);
+  --glass-hi: rgba(36,29,22,0.66);
+  --ink: #f7efe3;
+  --ink-dim: rgba(247,239,227,0.64);
+  --accent: #f0c88c;
+  --line: rgba(255,238,214,0.16);
+  --bg: #1a1612;
+  --font: -apple-system, "SF Pro Text", "Segoe UI", Roboto, system-ui, sans-serif;
+  color-scheme: dark;
+}
+html,body{height:100%;margin:0;padding:0;overflow:hidden;background:var(--bg);}
+body{overscroll-behavior:none;touch-action:none;-webkit-user-select:none;user-select:none;-webkit-touch-callout:none;-webkit-tap-highlight-color:transparent;font-family:var(--font);color:var(--ink);}
+#sand{position:fixed;left:0;top:0;width:100%;height:100%;display:block;touch-action:none;cursor:crosshair;}
+#bar{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(14px + env(safe-area-inset-bottom,0px));display:flex;align-items:center;gap:4px;padding:5px;border-radius:999px;background:var(--glass);-webkit-backdrop-filter:blur(18px) saturate(1.3);backdrop-filter:blur(18px) saturate(1.3);border:1px solid var(--line);box-shadow:0 8px 30px rgba(0,0,0,.28);transition:opacity .4s;max-width:calc(100vw - 20px);}
+#bar button{appearance:none;border:0;background:transparent;color:var(--ink-dim);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;width:52px;height:50px;border-radius:999px;font:600 10px/1 var(--font);letter-spacing:.02em;cursor:pointer;touch-action:manipulation;transition:background .2s,color .2s;padding:0;}
+#bar button svg{width:22px;height:22px;stroke:currentColor;fill:none;stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round;}
+#bar button.on{background:rgba(240,200,140,.2);color:var(--accent);}
+#bar button:focus-visible{outline:2px solid var(--accent);outline-offset:1px;}
+#bar button.attn{color:var(--accent);animation:pulse 1.6s ease-in-out infinite;}
+@keyframes pulse{50%{background:rgba(240,200,140,.22);}}
+#bar .sep{width:1px;height:30px;background:var(--line);margin:0 3px;}
+@media (max-width:420px){#bar button{width:44px;height:48px;font-size:9px}#bar button svg{width:21px;height:21px}#bar{gap:1px;padding:4px}}
+#hint{position:fixed;left:50%;top:calc(18px + env(safe-area-inset-top,0px));transform:translateX(-50%);padding:9px 16px;border-radius:999px;background:var(--glass);-webkit-backdrop-filter:blur(14px);backdrop-filter:blur(14px);border:1px solid var(--line);font:500 13px/1.35 var(--font);color:var(--ink);text-align:center;white-space:nowrap;pointer-events:none;transition:opacity .9s;max-width:calc(100vw - 32px);white-space:normal;width:max-content;}
+#hint.gone{opacity:0;}
+#toast{position:fixed;left:50%;top:calc(64px + env(safe-area-inset-top,0px));transform:translateX(-50%);padding:8px 14px;border-radius:12px;background:var(--glass-hi);border:1px solid var(--line);font:500 12.5px/1.35 var(--font);max-width:min(340px,calc(100vw - 32px));text-align:center;pointer-events:none;opacity:0;transition:opacity .5s;}
+#toast.show{opacity:1;}
+#pad{position:fixed;right:calc(16px + env(safe-area-inset-right,0px));bottom:calc(84px + env(safe-area-inset-bottom,0px));width:104px;height:104px;border-radius:50%;background:var(--glass);-webkit-backdrop-filter:blur(14px);backdrop-filter:blur(14px);border:1px solid var(--line);touch-action:none;cursor:grab;}
+#pad::before{content:"";position:absolute;inset:50% auto auto 50%;width:36px;height:36px;margin:-18px 0 0 -18px;border-radius:50%;border:1px dashed var(--line);}
+#pad span{position:absolute;left:0;right:0;bottom:-18px;text-align:center;font:600 10px/1 var(--font);letter-spacing:.06em;text-transform:uppercase;color:var(--ink-dim);}
+#puck{position:absolute;left:50%;top:50%;width:30px;height:30px;margin:-15px 0 0 -15px;border-radius:50%;background:radial-gradient(circle at 35% 30%,#fff6e6,#d9b788 60%,#8a6a45);box-shadow:0 3px 8px rgba(0,0,0,.35);pointer-events:none;}
+#fail{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;padding:24px;text-align:center;font:500 15px/1.5 var(--font);color:var(--ink);background:var(--bg);}
+#dbg{position:fixed;left:8px;top:calc(8px + env(safe-area-inset-top,0px));font:11px/1.3 ui-monospace,Menlo,monospace;color:#fff;background:rgba(0,0,0,.5);padding:4px 6px;border-radius:6px;pointer-events:none;white-space:pre;}
+@media (prefers-reduced-motion:reduce){#bar button.attn{animation:none}}
+</style>
+</head>
+<body>
+<canvas id="sand" aria-label="Sand tray. Draw with your finger, tilt the device to move the sand."></canvas>
+<div id="hint">Draw with your finger. Tilt or shake your phone.</div>
+<div id="toast" role="status"></div>
+<div id="pad" hidden aria-label="Tilt pad"><div id="puck"></div><span>Tilt</span></div>
+<nav id="bar" aria-label="Sand tools">
+  <button class="tool on" data-tool="finger" aria-pressed="true" title="Finger: draw and dig">
+    <svg viewBox="0 0 24 24"><path d="M9 11V5.5a1.5 1.5 0 0 1 3 0V11"/><path d="M12 10V9a1.5 1.5 0 0 1 3 0v2"/><path d="M15 10.5a1.5 1.5 0 0 1 3 0V15a6 6 0 0 1-6 6h-1a5 5 0 0 1-4.2-2.3L4.5 15a1.5 1.5 0 0 1 2.4-1.8L9 15"/></svg><span>Finger</span></button>
+  <button class="tool" data-tool="rake" aria-pressed="false" title="Rake: comb parallel grooves">
+    <svg viewBox="0 0 24 24"><path d="M4 9h16"/><path d="M6 9v6M10 9v6M14 9v6M18 9v6"/><path d="M12 9V3"/></svg><span>Rake</span></button>
+  <button class="tool" data-tool="smooth" aria-pressed="false" title="Smooth: level the sand">
+    <svg viewBox="0 0 24 24"><path d="M3 15c3-3 5 0 9-2s5-1 9 1"/><path d="M5 19h14"/><path d="M8 10c2-4 6-5 8-4"/></svg><span>Smooth</span></button>
+  <button class="tool" data-tool="pour" aria-pressed="false" title="Pour: add sand">
+    <svg viewBox="0 0 24 24"><path d="M8 3h8l-2 6h-4z"/><path d="M12 11v3M11 16v1M13 17v1M12 19v1"/><path d="M5 21c2-1.5 4.5-2 7-2s5 .5 7 2"/></svg><span>Pour</span></button>
+  <div class="sep" aria-hidden="true"></div>
+  <button id="btnTilt" title="Tilt sensors">
+    <svg viewBox="0 0 24 24"><rect x="7" y="3" width="10" height="18" rx="2" transform="rotate(-14 12 12)"/><path d="M3 8a10 10 0 0 1 2-3M21 16a10 10 0 0 1-2 3"/></svg><span>Tilt</span></button>
+  <button id="btnSound" title="Sound">
+    <svg viewBox="0 0 24 24"><path d="M4 10v4h4l5 4V6L8 10z"/><path id="sndWave" d="M16 9a4 4 0 0 1 0 6M18.5 6.5a8 8 0 0 1 0 11"/></svg><span>Sound</span></button>
+  <button id="btnReset" title="Reset the tray">
+    <svg viewBox="0 0 24 24"><path d="M4 12a8 8 0 1 0 2.4-5.7"/><path d="M4 4v4h4"/></svg><span>Reset</span></button>
+</nav>
+<script>
+(() => {
+'use strict';
+const $ = s => document.querySelector(s);
+const canvas = $('#sand');
+const DEBUG = /debug/.test(location.hash);
+const FIXQ = /fixq/.test(location.hash);
+
+function fail(msg){
+  const d=document.createElement('div'); d.id='fail'; d.textContent=msg; document.body.appendChild(d);
+}
+const gl = canvas.getContext('webgl2',{antialias:false,alpha:false,depth:false,stencil:false,premultipliedAlpha:false,powerPreference:'high-performance',preserveDrawingBuffer:false});
+if(!gl){ fail('This browser cannot run the sand simulation because WebGL 2 is unavailable. Try a recent Safari, Chrome or Firefox.'); return; }
+if(!gl.getExtension('EXT_color_buffer_float')){ fail('This device cannot render the floating-point textures the sand simulation needs.'); return; }
+gl.getExtension('OES_texture_float_linear');
+
+const isTouch = matchMedia('(pointer: coarse)').matches || 'ontouchstart' in window;
+const isIOS = /iP(hone|ad|od)/.test(navigator.userAgent) || (navigator.platform==='MacIntel' && navigator.maxTouchPoints>1);
+
+/* ------------------------------------------------------------------ */
+/* Tunables (lengths in CSS px, converted to cells at init)            */
+/* ------------------------------------------------------------------ */
+const P = {
+  depthPx: 17,          // resting sand depth
+  fingerRPx: 19,        // fingertip radius
+  fingerZPx: 1.0,       // how close the finger gets to the tray floor
+  rakeRPx: 5.0, rakeGapPx: 15, rakeN: 5, rakeZFrac: 0.42,
+  smoothRPx: 46,
+  pourRPx: 7, pourRate: 1.0,   // relative
+  gReal: 1.0,           // gravity scale
+  mu: 0.66,             // tan(angle of repose ~33.4deg)
+  muTalus: 1.25, talus: 0.22,
+  damp: 1.2,
+  layerPx: 6,           // thickness of the flowing surface layer
+  lightElev: 36,        // degrees
+};
+
+const QUALITY = [ {rs:0.5,sub:4}, {rs:0.62,sub:5}, {rs:0.76,sub:6}, {rs:0.9,sub:7}, {rs:1.0,sub:8} ];
+let qi = isTouch ? 3 : 4;
+const DPR = Math.min(window.devicePixelRatio||1, 3);
+
+/* ------------------------------------------------------------------ */
+/* GL helpers                                                          */
+/* ------------------------------------------------------------------ */
+const VS = `#version 300 es
+void main(){ vec2 p=vec2(float((gl_VertexID<<1)&2), float(gl_VertexID&2)); gl_Position=vec4(p*2.0-1.0,0.0,1.0); }`;
+const HDR = `#version 300 es
+precision highp float; precision highp int; precision highp sampler2D;
+`;
+function compile(type, src){
+  const s=gl.createShader(type); gl.shaderSource(s,src); gl.compileShader(s);
+  if(!gl.getShaderParameter(s,gl.COMPILE_STATUS)){
+    const log=gl.getShaderInfoLog(s); console.error(log, src.split('\n').map((l,i)=>(i+1)+': '+l).join('\n'));
+    throw new Error('Shader compile failed: '+log);
+  }
+  return s;
+}
+function program(fs, vs=VS){
+  const p=gl.createProgram();
+  gl.attachShader(p,compile(gl.VERTEX_SHADER,vs)); gl.attachShader(p,compile(gl.FRAGMENT_SHADER,fs));
+  gl.linkProgram(p);
+  if(!gl.getProgramParameter(p,gl.LINK_STATUS)) throw new Error('Link failed: '+gl.getProgramInfoLog(p));
+  const u={}; const n=gl.getProgramParameter(p,gl.ACTIVE_UNIFORMS);
+  for(let i=0;i<n;i++){ const info=gl.getActiveUniform(p,i); const name=info.name.replace(/\[0\]$/,''); u[name]=gl.getUniformLocation(p,info.name); }
+  return {p,u};
+}
+function tex(w,h,ifmt,fmt,type,filter,wrap,data){
+  const t=gl.createTexture(); gl.bindTexture(gl.TEXTURE_2D,t);
+  gl.texImage2D(gl.TEXTURE_2D,0,ifmt,w,h,0,fmt,type,data||null);
+  gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_MIN_FILTER,filter[0]);
+  gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_MAG_FILTER,filter[1]);
+  gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_WRAP_S,wrap); gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_WRAP_T,wrap);
+  t.w=w; t.h=h; return t;
+}
+const NEAREST=[gl.NEAREST,gl.NEAREST], LINEAR=[gl.LINEAR,gl.LINEAR], MIPLIN=[gl.LINEAR_MIPMAP_LINEAR,gl.LINEAR];
+function fbo(texs){
+  const f=gl.createFramebuffer(); gl.bindFramebuffer(gl.FRAMEBUFFER,f);
+  const bufs=[];
+  texs.forEach((t,i)=>{ gl.framebufferTexture2D(gl.FRAMEBUFFER,gl.COLOR_ATTACHMENT0+i,gl.TEXTURE_2D,t,0); bufs.push(gl.COLOR_ATTACHMENT0+i); });
+  gl.drawBuffers(bufs);
+  const st=gl.checkFramebufferStatus(gl.FRAMEBUFFER);
+  if(st!==gl.FRAMEBUFFER_COMPLETE) throw new Error('FBO incomplete '+st);
+  f.w=texs[0].w; f.h=texs[0].h; return f;
+}
+const vao=gl.createVertexArray();
+function bindTex(prog,name,unit,t){ gl.activeTexture(gl.TEXTURE0+unit); gl.bindTexture(gl.TEXTURE_2D,t); gl.uniform1i(prog.u[name],unit); }
+function run(prog, target, setup){
+  gl.useProgram(prog.p);
+  if(target){ gl.bindFramebuffer(gl.FRAMEBUFFER,target); gl.viewport(0,0,target.w,target.h); }
+  else { gl.bindFramebuffer(gl.FRAMEBUFFER,null); gl.viewport(0,0,canvas.width,canvas.height); }
+  setup && setup(prog.u);
+  gl.bindVertexArray(vao); gl.drawArrays(gl.TRIANGLES,0,3);
+}
+
+/* ------------------------------------------------------------------ */
+/* Shaders                                                             */
+/* ------------------------------------------------------------------ */
+const COMMON = HDR + `
+uniform ivec2 uN;
+ivec2 cl(ivec2 p){ return clamp(p, ivec2(0), uN-ivec2(1)); }
+float hash12(vec2 p){ vec3 p3=fract(vec3(p.xyx)*.1031); p3+=dot(p3,p3.yzx+33.33); return fract((p3.x+p3.y)*p3.z); }
+float mobOf(vec4 s, vec4 t){ return t.x<5e3 ? s.x-min(s.x,t.x) : s.x; }
+`;
+
+/* Tool footprint: x = locked height (finger bottom), yz = push direction, w = fluidize */
+const FS_TOOL = COMMON + `
+uniform int uSegN;
+uniform vec4 uSegA[40];
+uniform vec4 uSegB[40];
+uniform vec4 uSegC[40];
+out vec4 o;
+void main(){
+  vec2 p = gl_FragCoord.xy - 0.5;
+  float T = 1e4; vec2 push = vec2(0.); float fluid = 0.;
+  for(int i=0;i<40;i++){
+    if(i>=uSegN) break;
+    vec4 A=uSegA[i], B=uSegB[i];
+    vec2 a=A.xy, ab=A.zw-A.xy;
+    float t=clamp(dot(p-a,ab)/max(dot(ab,ab),1e-6),0.,1.);
+    vec2 d=p-(a+ab*t); float r=length(d); float R=B.x;
+    if(B.z<0.5){
+      if(r<R){
+        float tz = B.y + R - sqrt(max(R*R-r*r,0.));
+        if(tz<T){
+          T=tz;
+          vec2 rad = r>1e-3 ? d/r : vec2(0.);
+          vec2 vel=uSegC[i].xy; float vs=length(vel); vec2 vd = vs>1e-3 ? vel/vs : vec2(0.);
+          float front=max(dot(rad,vd),0.);
+          vec2 dir = rad + vd*(0.25+0.75*front)*min(vs*0.02,1.0);
+          if(dot(dir,dir)<1e-6) dir = vec2(hash12(p)-0.5, hash12(p+7.1)-0.5);
+          push = normalize(dir);
+        }
+      }
+    } else if(B.z<1.5){
+      float f = 1.-smoothstep(R*0.55, R, r);
+      fluid = max(fluid, f*B.w);
+    }
+  }
+  o = vec4(T, push, fluid);
+}`;
+
+/* Velocity update on a staggered (MAC) grid: x = u on the right face, y = v on the top face.
+   Advection, gravity + surface-pressure gradient, Coulomb friction (static/dynamic), tool push, walls. */
+const FS_VEL = COMMON + `
+uniform sampler2D uA; uniform sampler2D uTool;
+uniform float uDt, uMu, uGz, uHmax, uKpen, uVmax, uShake, uTime, uDamp;
+uniform vec2 uGxy;
+out vec4 o;
+bool inb(ivec2 p){ return p.x>=0&&p.y>=0&&p.x<uN.x&&p.y<uN.y; }
+vec4 A(ivec2 p){ return inb(p) ? texelFetch(uA, p, 0) : vec4(0.); }
+float Pr(float h){ return uGz*h + uKpen*max(h-uHmax,0.); }
+float sampleFace(vec2 q, int comp){
+  vec2 g = comp==0 ? q-vec2(0.5,0.) : q-vec2(0.,0.5);
+  ivec2 i0=ivec2(floor(g)); vec2 f=g-vec2(i0);
+  ivec2 e = comp==0 ? ivec2(1,0) : ivec2(0,1);
+  float num=0., den=0.;
+  for(int k=0;k<4;k++){
+    ivec2 of=ivec2(k&1, k>>1); ivec2 c=i0+of;
+    if(!inb(c)) continue;
+    float w=(of.x==1?f.x:1.-f.x)*(of.y==1?f.y:1.-f.y);
+    vec4 sa=A(c); float hb=A(c+e).x;
+    float mw=w*(sa.x+hb+1e-4);
+    num+=mw*(comp==0?sa.y:sa.z); den+=mw;
+  }
+  return den>0. ? num/den : 0.;
+}
+void main(){
+  ivec2 p=ivec2(gl_FragCoord.xy);
+  vec4 s=A(p); vec4 tl=texelFetch(uTool,p,0);
+  float n=hash12(vec2(p)*1.37+floor(uTime*3.)*19.31);
+  float muBase=uMu*(0.84+0.32*n)*(1.-uShake);
+  vec2 outv=vec2(0.);
+  for(int comp=0;comp<2;comp++){
+    ivec2 e = comp==0 ? ivec2(1,0) : ivec2(0,1);
+    ivec2 b=p+e;
+    if(!inb(b)) continue;                       // wall face
+    vec4 sb=A(b); vec4 tb=texelFetch(uTool,b,0);
+    float ma=mobOf(s,tl), mb=mobOf(sb,tb);
+    if(ma+mb<1e-4) continue;
+    float uc = comp==0 ? s.y : s.z;
+    float ut = comp==0 ? 0.25*(s.z+sb.z+A(p-ivec2(0,1)).z+A(b-ivec2(0,1)).z)
+                       : 0.25*(s.y+sb.y+A(p-ivec2(1,0)).y+A(b-ivec2(1,0)).y);
+    vec2 vel = comp==0 ? vec2(uc,ut) : vec2(ut,uc);
+    vec2 fpos = vec2(p)+0.5*vec2(e);
+    float un = sampleFace(fpos-vel*uDt, comp);
+    float g = comp==0 ? uGxy.x : uGxy.y;
+    un += (g - (Pr(sb.x)-Pr(s.x)))*uDt;
+    float mu = muBase*(1.-0.94*max(tl.w,tb.w));
+    vec2 V = comp==0 ? vec2(un,ut) : vec2(ut,un);
+    float sp=length(V);
+    un *= max(sp-uGz*mu*uDt,0.)/max(sp,1e-6);
+    un /= (1.+uDamp*uDt);
+    bool pa = tl.x<5e3 && s.x>tl.x+0.01, pb = tb.x<5e3 && sb.x>tb.x+0.01;
+    if(pa||pb){
+      float d=0., c=0.;
+      if(pa){ d+= comp==0?tl.y:tl.z; c+=1.; }
+      if(pb){ d+= comp==0?tb.y:tb.z; c+=1.; }
+      un = d/c*uVmax;
+    }
+    outv[comp]=clamp(un,-uVmax,uVmax);
+  }
+  o=vec4(s.x,outv,s.w);
+}`;
+
+const FACE = `
+uniform sampler2D uA; uniform sampler2D uTool;
+uniform float uDt, uMuT, uTal, uLayer;
+float faceRaw(ivec2 a, ivec2 b, int axis){
+  if(a.x<0||a.y<0||b.x>=uN.x||b.y>=uN.y) return 0.;
+  vec4 sa=texelFetch(uA,a,0), sb=texelFetch(uA,b,0);
+  vec4 ta=texelFetch(uTool,a,0), tb=texelFetch(uTool,b,0);
+  float ma=mobOf(sa,ta), mb=mobOf(sb,tb);
+  // only a surface layer flows (granular avalanches), except where a tool bulldozes the whole column
+  float la = ta.x<5e3 ? ma : min(ma,uLayer), lb = tb.x<5e3 ? mb : min(mb,uLayer);
+  float u = axis==0?sa.y:sa.z;
+  float adv = u>0. ? u*uDt*la : u*uDt*lb;
+  float dh = sa.x-sb.x;
+  float tal = sign(dh)*max(abs(dh)-uMuT,0.)*uTal;
+  tal = dh>0. ? min(tal, ma*0.24) : max(tal, -mb*0.24);
+  return adv+tal;
+}`;
+
+const FS_K = COMMON + FACE + `
+out vec4 o;
+void main(){
+  ivec2 p=ivec2(gl_FragCoord.xy);
+  float m=mobOf(texelFetch(uA,p,0), texelFetch(uTool,p,0));
+  float fr=faceRaw(p,p+ivec2(1,0),0), fl=faceRaw(p-ivec2(1,0),p,0);
+  float fu=faceRaw(p,p+ivec2(0,1),1), fd=faceRaw(p-ivec2(0,1),p,1);
+  float outf=max(fr,0.)+max(-fl,0.)+max(fu,0.)+max(-fd,0.);
+  o=vec4(outf>m ? m/max(outf,1e-12) : 1., 0.,0.,1.);
+}`;
+
+const FS_H = COMMON + FACE + `
+uniform sampler2D uK;
+uniform int uPourN; uniform vec4 uPour[6];
+out vec4 o;
+float Kof(ivec2 p){ return texelFetch(uK,p,0).x; }
+float faceLim(ivec2 a, ivec2 b, int axis){ float f=faceRaw(a,b,axis); if(f==0.) return 0.; return f>0. ? f*Kof(a) : f*Kof(b); }
+void main(){
+  ivec2 p=ivec2(gl_FragCoord.xy);
+  vec4 s=texelFetch(uA,p,0);
+  float h = s.x - faceLim(p,p+ivec2(1,0),0) + faceLim(p-ivec2(1,0),p,0)
+                - faceLim(p,p+ivec2(0,1),1) + faceLim(p-ivec2(0,1),p,1);
+  for(int i=0;i<6;i++){ if(i>=uPourN) break; vec4 q=uPour[i]; vec2 d=vec2(p)-q.xy; h += q.w*uDt*exp(-dot(d,d)/(q.z*q.z))/(3.14159*q.z*q.z); }
+  o=vec4(max(h,0.), s.yzw);
+}`;
+
+/* Grain-coordinate offset advection: grains travel with the flow */
+const FS_T = COMMON + `
+uniform sampler2D uA; uniform sampler2D uB; uniform float uDt;
+out vec4 o;
+vec2 Bo(ivec2 p){ return texelFetch(uB,cl(p),0).xy; }
+void main(){
+  ivec2 p=ivec2(gl_FragCoord.xy);
+  vec4 s=texelFetch(uA,p,0); vec4 b=texelFetch(uB,p,0);
+  float ul = p.x>0 ? texelFetch(uA,p-ivec2(1,0),0).y : 0.;
+  float vd = p.y>0 ? texelFetch(uA,p-ivec2(0,1),0).z : 0.;
+  vec2 v=0.5*(s.yz+vec2(ul,vd));
+  if(dot(v,v)<1e-8){ o=b; return; }
+  vec2 q=vec2(p)-v*uDt;
+  ivec2 q0=ivec2(floor(q)); vec2 f=q-vec2(q0);
+  vec2 off = mix(mix(Bo(q0),Bo(q0+ivec2(1,0)),f.x), mix(Bo(q0+ivec2(0,1)),Bo(q0+ivec2(1,1)),f.x), f.y);
+  off += vec2(p)-q; // material that was at q is now at p
+  vec2 lap = 0.25*(Bo(p+ivec2(1,0))+Bo(p-ivec2(1,0))+Bo(p+ivec2(0,1))+Bo(p-ivec2(0,1)));
+  off = mix(off, lap, 0.05*clamp(length(v)*uDt*3.,0.,1.));
+  o=vec4(off, b.zw);
+}`;
+
+/* Per-frame render prep: height + gradient (mipmapped for AO) */
+const FS_SURF = COMMON + `
+uniform sampler2D uA;
+out vec4 o;
+float H(ivec2 p){ return texelFetch(uA,cl(p),0).x; }
+void main(){
+  ivec2 p=ivec2(gl_FragCoord.xy);
+  vec4 s=texelFetch(uA,p,0);
+  float gx=0.5*(H(p+ivec2(1,0))-H(p-ivec2(1,0)));
+  float gy=0.5*(H(p+ivec2(0,1))-H(p-ivec2(0,1)));
+  o=vec4(s.x,gx,gy,length(s.yz));
+}`;
+
+/* Soft heightfield shadows from the light + multi-scale ambient occlusion */
+const FS_LIGHT = COMMON + `
+uniform sampler2D uS; uniform vec3 uL; uniform float uWall;
+out vec4 o;
+void main(){
+  vec2 p=gl_FragCoord.xy; vec2 sz=vec2(uN);
+  float h0=texelFetch(uS,ivec2(p),0).x;
+  float sh=1.;
+  vec2 d=uL.xy; float len=length(d);
+  if(len>1e-3){
+    d/=len; float rise=uL.z/len; float t=0.55;
+    for(int i=0;i<34;i++){
+      vec2 q=p+d*t;
+      bool outside = q.x<0.||q.y<0.||q.x>sz.x||q.y>sz.y;
+      float hs = outside ? uWall : textureLod(uS,q/sz,0.).x;
+      float ray=h0+t*rise;
+      sh=min(sh, clamp(0.5+(ray-hs)/(0.16*t+0.22),0.,1.));
+      if(outside || sh<0.01) break;
+      t += 0.45 + t*0.09;
+    }
+  }
+  vec2 uv=p/sz;
+  float b1=textureLod(uS,uv,1.).x, b2=textureLod(uS,uv,2.5).x, b3=textureLod(uS,uv,4.).x;
+  float occ=(b1-h0)*0.16+(b2-h0)*0.10+(b3-h0)*0.05;
+  float ao=clamp(1.-occ, 0.3, 1.12);
+  o=vec4(sh,ao,0.,1.);
+}`;
+
+/* Reduction for audio / diagnostics: mass and kinetic flow */
+const FS_REDUCE = COMMON + `
+uniform sampler2D uA; uniform ivec2 uBlock;
+out vec4 o;
+void main(){
+  ivec2 b=ivec2(gl_FragCoord.xy)*uBlock;
+  float m=0., k=0., mv=0.;
+  for(int y=0;y<64;y++){ if(y>=uBlock.y) break;
+    for(int x=0;x<64;x++){ if(x>=uBlock.x) break;
+      ivec2 p=b+ivec2(x,y); if(p.x>=uN.x||p.y>=uN.y) continue;
+      vec4 s=texelFetch(uA,p,0); m+=s.x; float sp=length(s.yz); k+=s.x*sp; mv+= sp>1.0?1.:0.;
+    }}
+  o=vec4(m,k,mv,1.);
+}`;
+
+/* Procedural grain texture: three overlapping layers of irregular, mineral-coloured grains */
+const FS_GRAIN = HDR + `
+layout(location=0) out vec4 o0;
+layout(location=1) out vec4 o1;
+uniform float uSize;
+vec4 h4(vec2 p){ vec4 p4=fract(vec4(p.xyxy)*vec4(.1031,.1030,.0973,.1099)); p4+=dot(p4,p4.wzxy+33.33); return fract((p4.xxyz+p4.yzzw)*p4.zywx); }
+vec3 palette(float r, float j){
+  vec3 c;
+  if(r<0.34) c=vec3(0.86,0.74,0.57);
+  else if(r<0.56) c=vec3(0.78,0.62,0.44);
+  else if(r<0.68) c=vec3(0.94,0.90,0.82);
+  else if(r<0.78) c=vec3(0.82,0.56,0.37);
+  else if(r<0.87) c=vec3(0.58,0.43,0.30);
+  else if(r<0.935) c=vec3(0.60,0.58,0.55);
+  else if(r<0.975) c=vec3(0.36,0.30,0.25);
+  else c=vec3(0.11,0.10,0.10);
+  return c*(0.86+0.28*j);
+}
+void main(){
+  vec2 q=gl_FragCoord.xy;
+  float best=-1.; vec3 col=vec3(0.); vec4 info=vec4(0.);
+  for(int L=0;L<3;L++){
+    float n = L==0?200.:(L==1?168.:136.);
+    float cs=uSize/n;
+    vec2 g=q/cs; vec2 gi=floor(g);
+    for(int dy=-1;dy<=1;dy++) for(int dx=-1;dx<=1;dx++){
+      vec2 c=gi+vec2(dx,dy); vec2 cw=mod(c,n)+float(L)*317.;
+      vec4 r=h4(cw); vec4 r2=h4(cw+71.3);
+      vec2 ctr=(c+0.15+0.7*r.xy)*cs;
+      vec2 d=q-ctr;
+      float ang=r.z*6.2832; float ca=cos(ang), sa=sin(ang);
+      d=vec2(ca*d.x+sa*d.y, -sa*d.x+ca*d.y);
+      d.y/= (0.68+0.32*r.w);
+      float rad=cs*(0.36+0.30*r2.x);
+      float th=atan(d.y,d.x);
+      rad*=1.+0.10*sin(th*3.+r2.y*6.28)+0.06*sin(th*5.+r2.z*6.28)+0.035*sin(th*9.+r2.w*6.28);
+      float dd=length(d)/rad;
+      if(dd<1.){
+        float dome=sqrt(1.-dd*dd);
+        float hgt=0.30*r2.w + 0.70*dome*(0.75+0.25*r.x);
+        if(hgt>best){
+          best=hgt;
+          vec4 r3=h4(cw+19.7);
+          col=palette(r3.x, r3.y);
+          // inner mottling and a slightly brighter crown
+          col*=0.9+0.1*sin(dot(d,vec2(1.7,2.3))/rad*3.+r3.z*6.)+0.12*dome;
+          float quartz = (r3.x<0.34||(r3.x>=0.56&&r3.x<0.68)) && r3.w<0.55 ? 1. : 0.;
+          info=vec4(r3.z, r3.w, quartz, dome);
+        }
+      }
+    }
+  }
+  if(best<0.){ best=0.; col=vec3(0.30,0.24,0.18); info=vec4(0.5,0.5,0.,0.); }
+  o0=vec4(sqrt(clamp(col,0.,1.)), clamp(best,0.,1.));
+  o1=info;
+}`;
+const FS_GRAINN = HDR + `
+uniform sampler2D uG; uniform float uSize;
+out vec4 o;
+float H(vec2 p){ return texture(uG, p/uSize).a; }
+void main(){
+  vec2 q=gl_FragCoord.xy;
+  float hx=H(q+vec2(1,0))-H(q-vec2(1,0));
+  float hy=H(q+vec2(0,1))-H(q-vec2(0,1));
+  vec3 n=normalize(vec3(-hx*1.6,-hy*1.6,1.));
+  o=vec4(n.xy*0.5+0.5, 0., 1.);
+}`;
+
+/* Final composite at screen resolution */
+const FS_FINAL = HDR + `
+uniform sampler2D uS, uSL, uB, uG0, uG1, uG2;
+uniform ivec2 uN;
+uniform vec2 uCanvas;    // device px of the drawing buffer
+uniform float uPx;       // device px per css px
+uniform vec2 uR0, uR1, uROff; // screen css -> natural css
+uniform float uCs;       // css px per cell
+uniform float uGS;       // grain texture px per css px
+uniform float uGT;       // grain texture size
+uniform vec3 uL;
+uniform float uTime, uExposure;
+out vec4 o;
+vec4 cubicW(float v){ vec4 n=vec4(1.,2.,3.,4.)-v; vec4 s=n*n*n; float x=s.x; float y=s.y-4.*s.x; float z=s.z-4.*s.y+6.*s.x; float w=6.-x-y-z; return vec4(x,y,z,w)*(1./6.); }
+vec4 bicubic(sampler2D t, vec2 tc, vec2 size){
+  tc-=0.5; vec2 f=fract(tc); tc-=f;
+  vec4 xc=cubicW(f.x), yc=cubicW(f.y);
+  vec4 c=tc.xxyy+vec2(-0.5,1.5).xyxy;
+  vec4 s=vec4(xc.xz+xc.yw, yc.xz+yc.yw);
+  vec4 off=(c+vec4(xc.yw,yc.yw)/s)/size.xxyy;
+  vec4 s0=textureLod(t,off.xz,0.), s1=textureLod(t,off.yz,0.), s2=textureLod(t,off.xw,0.), s3=textureLod(t,off.yw,0.);
+  float sx=s.x/(s.x+s.y), sy=s.z/(s.z+s.w);
+  return mix(mix(s3,s2,sx), mix(s1,s0,sx), sy);
+}
+vec2 Bo(ivec2 p){ return texelFetch(uB, clamp(p,ivec2(0),uN-ivec2(1)), 0).xy; }
+float hash12(vec2 p){ vec3 p3=fract(vec3(p.xyx)*.1031); p3+=dot(p3,p3.yzx+33.33); return fract((p3.x+p3.y)*p3.z); }
+vec3 aces(vec3 x){ return clamp((x*(2.51*x+0.03))/(x*(2.43*x+0.59)+0.14),0.,1.); }
+void main(){
+  vec2 sc=vec2(gl_FragCoord.x, uCanvas.y-gl_FragCoord.y)/uPx;
+  vec2 nat=vec2(dot(uR0,sc), dot(uR1,sc))+uROff;
+  vec2 tc=nat/uCs;               // texel coords (cell i spans [i,i+1])
+  vec2 size=vec2(uN);
+  vec4 S=bicubic(uS, tc, size);
+  vec2 SL=texture(uSL, tc/size).xy;
+  // grain coordinates advected with the sand
+  vec2 c=tc-0.5; ivec2 i0=ivec2(floor(c)); vec2 f=c-vec2(i0);
+  vec2 o00=Bo(i0), o10=Bo(i0+ivec2(1,0)), o01=Bo(i0+ivec2(0,1)), o11=Bo(i0+ivec2(1,1));
+  vec2 omin=min(min(o00,o10),min(o01,o11)), omax=max(max(o00,o10),max(o01,o11));
+  vec2 base=nat*uGS/uGT; float k=uCs*uGS/uGT;
+  vec2 guv; vec4 g0;
+  // grains travel with the sand; where neighbouring cells moved differently, pick the
+  // highest grain among the candidates (height-blended texture bombing) so nothing smears
+  vec2 dxu=dFdx(base), dyu=dFdy(base);
+  if(max(omax.x-omin.x, omax.y-omin.y)<0.03){
+    guv=base+o00*k; g0=textureGrad(uG0,guv,dxu,dyu);
+  } else {
+    vec2 u0=base+o00*k, u1=base+o10*k, u2=base+o01*k, u3=base+o11*k;
+    vec4 a0=textureGrad(uG0,u0,dxu,dyu), a1=textureGrad(uG0,u1,dxu,dyu), a2=textureGrad(uG0,u2,dxu,dyu), a3=textureGrad(uG0,u3,dxu,dyu);
+    float s0=a0.a+1.6*(1.-f.x)*(1.-f.y), s1=a1.a+1.6*f.x*(1.-f.y), s2=a2.a+1.6*(1.-f.x)*f.y, s3=a3.a+1.6*f.x*f.y;
+    guv=u0; g0=a0; float sb=s0;
+    if(s1>sb){ sb=s1; guv=u1; g0=a1; }
+    if(s2>sb){ sb=s2; guv=u2; g0=a2; }
+    if(s3>sb){ sb=s3; guv=u3; g0=a3; }
+  }
+  vec4 g1=textureGrad(uG1,guv,dxu,dyu); vec4 g2=textureGrad(uG2,guv,dxu,dyu);
+  float gh=g0.a;
+  vec3 alb=g0.rgb*g0.rgb; // stored as sqrt
+  float h=S.x;
+  vec3 Nm=normalize(vec3(-S.y,-S.z,1.));
+  vec2 gn=(g2.xy*2.-1.);
+  vec3 N=normalize(Nm+vec3(gn*0.85,0.));
+  vec3 L=normalize(uL);
+  float sh=SL.x, ao=SL.y;
+  // grain-scale contact shadows along the light direction
+  vec2 l2=normalize(L.xy+1e-5); float tanE=L.z/max(length(L.xy),1e-3);
+  float gs=1.;
+  for(int k=1;k<=3;k++){
+    float dpx=float(k)*1.25;
+    float hn=textureGrad(uG0, guv + l2*dpx/uGT, dxu, dyu).a;
+    gs=min(gs, clamp(1.-(hn-gh-dpx*tanE*0.33)*2.6, 0.,1.));
+  }
+  gs=mix(1.,gs,0.85);
+  float cav=mix(0.42,1.,smoothstep(0.02,0.55,gh));
+  float ndl=max(dot(N,L),0.);
+  float ndlM=max(dot(Nm,L),0.);
+  vec3 sun=vec3(1.0,0.90,0.76)*3.1;
+  vec3 sky=vec3(0.50,0.60,0.78)*0.62;
+  vec3 bounce=vec3(0.75,0.58,0.40)*0.18;
+  float diff = mix(ndl, ndlM, 0.25);
+  vec3 col = alb*( sun*diff*sh*gs + (sky*(0.55+0.45*N.z)+bounce*(1.-N.z))*ao*cav );
+  // translucency of quartz: light leaks through the lit side
+  col += alb*sun*0.06*g1.z*sh*smoothstep(0.2,0.8,gh);
+  // glints from quartz facets
+  vec3 fn=normalize(vec3((g1.xy*2.-1.)*0.62,1.)+vec3(Nm.xy,0.));
+  vec3 Hh=normalize(L+vec3(0.,0.,1.));
+  float gl=pow(max(dot(fn,Hh),0.),700.)*g1.z*smoothstep(0.45,0.9,g1.w);
+  col += vec3(1.,0.95,0.86)*gl*22.*sh*gs;
+  // tray floor (dark slate) visible where the sand is thin
+  float fn0=hash12(floor(nat*uPx*0.5));
+  vec3 floorC=vec3(0.042,0.040,0.039)*(0.9+0.2*fn0);
+  vec3 floorL=floorC*(sun*max(L.z,0.)*sh*0.55+sky*0.8);
+  // grains on the floor cast tiny shadows / leave dust
+  float dust=smoothstep(0.0,0.9,h);
+  floorL*=mix(1.,0.65,dust);
+  float cov=smoothstep(-0.06,0.06, h*1.15 - 0.55*(1.-gh) - 0.06);
+  col=mix(floorL, col, cov);
+  // subtle vignette of the lamp
+  vec2 vq=gl_FragCoord.xy/uCanvas-0.5;
+  col*=1.-0.18*dot(vq,vq);
+  col=aces(col*uExposure);
+  col=pow(col, vec3(1./2.2));
+  col+=(hash12(gl_FragCoord.xy+fract(uTime)*91.)-0.5)/255.;
+  o=vec4(col,1.);
+}`;
+
+/* Airborne grains (pour stream, flicks) drawn as lit points with cast shadows */
+const VS_PART = `#version 300 es
+precision highp float;
+layout(location=0) in vec4 aP; // nat x,y (cells), z (cells above floor), seed
+uniform vec2 uR0, uR1, uROff; uniform vec2 uScreen; uniform float uCs, uPx; uniform vec3 uL; uniform float uShadow;
+out float vSeed; out float vZ;
+void main(){
+  vec2 nat=aP.xy*uCs;
+  if(uShadow>0.5){ nat -= uL.xy/max(uL.z,0.2)*aP.z*uCs; }
+  vec2 d=nat-uROff;
+  vec2 sc=vec2(uR0.x*d.x+uR1.x*d.y, uR0.y*d.x+uR1.y*d.y); // inverse rotation (transpose)
+  vec2 ndc=vec2(sc.x/uScreen.x*2.-1., 1.-sc.y/uScreen.y*2.);
+  gl_Position=vec4(ndc,0.,1.);
+  gl_PointSize=max(1.5, uCs*uPx*(0.62+0.004*aP.z)*(0.8+0.4*fract(aP.w*7.3)));
+  vSeed=aP.w; vZ=aP.z;
+}`;
+const FS_PART = HDR + `
+in float vSeed; in float vZ; uniform float uShadow; uniform vec3 uL; uniform float uExposure;
+out vec4 o;
+vec3 aces(vec3 x){ return clamp((x*(2.51*x+0.03))/(x*(2.43*x+0.59)+0.14),0.,1.); }
+void main(){
+  vec2 c=gl_PointCoord*2.-1.; float r=dot(c,c); if(r>1.) discard;
+  if(uShadow>0.5){ o=vec4(0.,0.,0.,0.28*(1.-r)/(1.+vZ*0.05)); return; }
+  float s=fract(vSeed*13.7);
+  vec3 alb = s<0.4?vec3(0.86,0.74,0.57):(s<0.65?vec3(0.78,0.62,0.44):(s<0.8?vec3(0.94,0.9,0.82):(s<0.93?vec3(0.58,0.43,0.3):vec3(0.15,0.13,0.12))));
+  alb*=alb;
+  vec3 n=vec3(c.x,c.y*-1.,sqrt(max(1.-r,0.)));
+  vec3 L=normalize(uL);
+  vec3 col=alb*(vec3(1.,0.9,0.76)*3.1*max(dot(n,vec3(L.x,-L.y,L.z)),0.)+vec3(0.5,0.6,0.78)*0.6);
+  col=pow(aces(col*uExposure),vec3(1./2.2));
+  o=vec4(col, 1.-smoothstep(0.7,1.,r));
+}`;
+
+let progs;
+try{
+  progs = {
+    tool:program(FS_TOOL), vel:program(FS_VEL), k:program(FS_K), h:program(FS_H), t:program(FS_T),
+    surf:program(FS_SURF), light:program(FS_LIGHT), reduce:program(FS_REDUCE),
+    grain:program(FS_GRAIN), grainN:program(FS_GRAINN), final:program(FS_FINAL),
+    part:program(FS_PART, VS_PART),
+  };
+}catch(e){ fail('The sand simulation failed to start on this device: '+e.message); return; }
+
+/* ------------------------------------------------------------------ */
+/* Grain texture (generated once)                                      */
+/* ------------------------------------------------------------------ */
+const GT = 1024;
+const grain0 = tex(GT,GT,gl.RGBA8,gl.RGBA,gl.UNSIGNED_BYTE,MIPLIN,gl.REPEAT);
+const grain1 = tex(GT,GT,gl.RGBA8,gl.RGBA,gl.UNSIGNED_BYTE,MIPLIN,gl.REPEAT);
+const grain2 = tex(GT,GT,gl.RGBA8,gl.RGBA,gl.UNSIGNED_BYTE,MIPLIN,gl.REPEAT);
+{
+  const f=fbo([grain0,grain1]);
+  run(progs.grain, f, u=>{ gl.uniform1f(u.uSize,GT); });
+  gl.bindTexture(gl.TEXTURE_2D,grain0); gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_MIN_FILTER,gl.LINEAR);
+  const f2=fbo([grain2]);
+  run(progs.grainN, f2, u=>{ bindTex(progs.grainN,'uG',0,grain0); gl.uniform1f(u.uSize,GT); });
+  for(const t of [grain0,grain1,grain2]){ gl.bindTexture(gl.TEXTURE_2D,t); gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_MIN_FILTER,gl.LINEAR_MIPMAP_LINEAR); gl.generateMipmap(gl.TEXTURE_2D); }
+  // grain1 holds random ids: keep its mips from blending ids too much
+  gl.bindTexture(gl.TEXTURE_2D,grain1); gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_MIN_FILTER,gl.NEAREST_MIPMAP_NEAREST);
+}
+
+/* ------------------------------------------------------------------ */
+/* Simulation state                                                    */
+/* ------------------------------------------------------------------ */
+let NX=0, NY=0, cs=3, vw=0, vh=0, angle=0, natW=0, natH=0;
+let A=[], B=[], Kt, ToolT, SurfA, SurfB, RedT;
+let fA=[], fB=[], fK, fTool, fSurfA, fSurfB, fRed;
+let cells = {}; // tunables in cells
+const RED=16;
+let pbo=gl.createBuffer(), fence=null, redData=new Float32Array(RED*RED*4);
+gl.bindBuffer(gl.PIXEL_PACK_BUFFER,pbo); gl.bufferData(gl.PIXEL_PACK_BUFFER,redData.byteLength,gl.STREAM_READ); gl.bindBuffer(gl.PIXEL_PACK_BUFFER,null);
+
+function getAngle(){
+  let a = (screen.orientation && typeof screen.orientation.angle==='number') ? screen.orientation.angle : (typeof window.orientation==='number' ? window.orientation : 0);
+  return ((a%360)+360)%360;
+}
+// screen css -> natural css mapping
+let R0=[1,0], R1=[0,1], ROFF=[0,0];
+function setMapping(){
+  if(!isTouch) angle=0;
+  if(angle===90){ R0=[0,-1]; R1=[1,0]; ROFF=[vh,0]; }
+  else if(angle===180){ R0=[-1,0]; R1=[0,-1]; ROFF=[vw,vh]; }
+  else if(angle===270){ R0=[0,1]; R1=[-1,0]; ROFF=[0,vw]; }
+  else { R0=[1,0]; R1=[0,1]; ROFF=[0,0]; }
+}
+function toNat(sx,sy){ return [R0[0]*sx+R0[1]*sy+ROFF[0], R1[0]*sx+R1[1]*sy+ROFF[1]]; }
+
+function initialHeights(nx,ny,c){
+  const data=new Float32Array(nx*ny*4);
+  const h0=P.depthPx/c;
+  const rnd=mulberry(1234);
+  // a few random low-frequency waves plus soft wind ripples
+  const waves=[]; for(let i=0;i<5;i++) waves.push([rnd()*6.28, (0.6+rnd())*0.012*c, rnd()*6.28, 0.18+rnd()*0.25]);
+  const ripAng=0.35+rnd()*0.3, ripK=2*Math.PI/(34/c);
+  for(let y=0;y<ny;y++) for(let x=0;x<nx;x++){
+    let h=h0;
+    for(const w of waves){ h+= w[3]*Math.sin((x*Math.cos(w[0])+y*Math.sin(w[0]))*w[1]+w[2]); }
+    const warp=Math.sin(x*0.05*c/3+y*0.031*c/3)*2.2+Math.sin(y*0.021*c/3-x*0.013*c/3)*3.0;
+    const ph=(x*Math.cos(ripAng)+y*Math.sin(ripAng))*ripK+warp;
+    const s=Math.sin(ph); h+= 0.45*(s>0? s : s*0.55)*(0.6+0.4*Math.sin(x*0.02+y*0.013));
+    const i=(y*nx+x)*4; data[i]=h; data[i+1]=0; data[i+2]=0; data[i+3]=0;
+  }
+  return data;
+}
+function mulberry(a){ return ()=>{ a|=0; a=a+0x6D2B79F5|0; let t=Math.imul(a^a>>>15,1|a); t=t+Math.imul(t^t>>>7,61|t)^t; return ((t^t>>>14)>>>0)/4294967296; }; }
+
+function allocSim(nx,ny,initData){
+  [...A,...B,Kt,ToolT,SurfA,SurfB,RedT].forEach(t=>t&&gl.deleteTexture(t));
+  [...fA,...fB,fK,fTool,fSurfA,fSurfB,fRed].forEach(f=>f&&gl.deleteFramebuffer(f));
+  A=[0,1].map(i=>tex(nx,ny,gl.RGBA32F,gl.RGBA,gl.FLOAT,NEAREST,gl.CLAMP_TO_EDGE, i===0?initData:null));
+  B=[0,1].map(()=>tex(nx,ny,gl.RGBA32F,gl.RGBA,gl.FLOAT,NEAREST,gl.CLAMP_TO_EDGE,new Float32Array(nx*ny*4)));
+  Kt=tex(nx,ny,gl.R32F,gl.RED,gl.FLOAT,NEAREST,gl.CLAMP_TO_EDGE);
+  ToolT=tex(nx,ny,gl.RGBA32F,gl.RGBA,gl.FLOAT,NEAREST,gl.CLAMP_TO_EDGE);
+  SurfA=tex(nx,ny,gl.RGBA16F,gl.RGBA,gl.HALF_FLOAT,MIPLIN,gl.CLAMP_TO_EDGE);
+  SurfB=tex(nx,ny,gl.RGBA16F,gl.RGBA,gl.HALF_FLOAT,LINEAR,gl.CLAMP_TO_EDGE);
+  RedT=tex(RED,RED,gl.RGBA32F,gl.RGBA,gl.FLOAT,NEAREST,gl.CLAMP_TO_EDGE);
+  fA=A.map(t=>fbo([t])); fB=B.map(t=>fbo([t])); fK=fbo([Kt]); fTool=fbo([ToolT]);
+  fSurfA=fbo([SurfA]); fSurfB=fbo([SurfB]); fRed=fbo([RedT]);
+}
+
+function computeCells(){
+  cells.h0=P.depthPx/cs; cells.fingerR=P.fingerRPx/cs; cells.fingerZ=P.fingerZPx/cs;
+  cells.rakeR=P.rakeRPx/cs; cells.rakeGap=P.rakeGapPx/cs; cells.smoothR=P.smoothRPx/cs; cells.pourR=P.pourRPx/cs;
+  cells.hmax=cells.h0*5.0; cells.layer=P.layerPx/cs;
+  // physical gravity: 9.81 m/s^2 with 1 css px ~ 0.16 mm on phones, slowed a bit for readability
+  cells.G = (isTouch? 9.81/(0.00016*cs) : 9.81/(0.00026*cs)) * 0.32 * P.gReal;
+}
+
+function setup(keepState){
+  vw=innerWidth; vh=innerHeight; angle=getAngle(); setMapping();
+  if(isTouch && (angle===90||angle===270)){ natW=vh; natH=vw; } else { natW=vw; natH=vh; }
+  const target = isTouch ? 42000 : 95000;
+  let c=Math.max(2.6, Math.sqrt(natW*natH/target));
+  const nx=Math.max(16,Math.round(natW/c)), ny=Math.max(16,Math.round(natH/c));
+  c=natW/nx;
+  const same = nx===NX && ny===NY;
+  if(!(keepState && same)){
+    let data=null;
+    if(keepState && NX>0) data=resample(nx,ny,c);
+    cs=c; NX=nx; NY=ny; computeCells();
+    allocSim(NX,NY, data || initialHeights(NX,NY,cs));
+    if(data&&data.B){ gl.bindTexture(gl.TEXTURE_2D,B[0]); gl.texSubImage2D(gl.TEXTURE_2D,0,0,0,NX,NY,gl.RGBA,gl.FLOAT,data.B); }
+  }
+  resizeCanvas();
+}
+// Read back the current heights and resample them into a new grid (keeps the sand on resize)
+function resample(nx,ny,c){
+  const old=new Float32Array(NX*NY*4);
+  gl.bindFramebuffer(gl.FRAMEBUFFER,fA[0]); gl.readPixels(0,0,NX,NY,gl.RGBA,gl.FLOAT,old);
+  const out=new Float32Array(nx*ny*4);
+  const sx=NX/nx, sy=NY/ny, scaleH=cs/c;
+  for(let y=0;y<ny;y++) for(let x=0;x<nx;x++){
+    const ox=Math.min(NX-1,Math.floor((x+0.5)*sx)), oy=Math.min(NY-1,Math.floor((y+0.5)*sy));
+    out[(y*nx+x)*4]=old[(oy*NX+ox)*4]*scaleH;
+  }
+  return out;
+}
+function resizeCanvas(){
+  const q=QUALITY[qi];
+  const px=Math.max(1, DPR*q.rs);
+  canvas.width=Math.round(vw*px); canvas.height=Math.round(vh*px);
+  canvas._px=canvas.width/vw;
+}
+
+/* ------------------------------------------------------------------ */
+/* Input: pointers become tools                                        */
+/* ------------------------------------------------------------------ */
+let tool='finger';
+const pointers=new Map();
+function cellPos(e){ const r=canvas.getBoundingClientRect(); const n=toNat(e.clientX-r.left, e.clientY-r.top); return [n[0]/cs, n[1]/cs]; }
+canvas.addEventListener('pointerdown',e=>{
+  e.preventDefault(); canvas.setPointerCapture(e.pointerId);
+  const p=cellPos(e);
+  pointers.set(e.pointerId,{x:p[0],y:p[1],hist:[[p[0],p[1],p[0],p[1]]],last:[p[0],p[1]],vx:0,vy:0,t0:performance.now(),dir:[1,0],z:1,moved:0});
+  firstInteraction();
+});
+canvas.addEventListener('pointermove',e=>{
+  const pt=pointers.get(e.pointerId); if(!pt) return;
+  const evs=e.getCoalescedEvents?e.getCoalescedEvents():[e];
+  const p=cellPos(evs.length?evs[evs.length-1]:e); pt.x=p[0]; pt.y=p[1];
+});
+function endPointer(e){ const pt=pointers.get(e.pointerId); if(pt){ pointers.delete(e.pointerId); } if(isTouch) requestMotionPermission(); }
+canvas.addEventListener('pointerup',endPointer);
+canvas.addEventListener('pointercancel',endPointer);
+canvas.addEventListener('contextmenu',e=>e.preventDefault());
+document.addEventListener('gesturestart',e=>e.preventDefault());
+document.addEventListener('touchmove',e=>{ if(e.target===canvas) e.preventDefault(); },{passive:false});
+
+document.querySelectorAll('#bar .tool').forEach(b=>b.addEventListener('click',()=>{
+  tool=b.dataset.tool;
+  document.querySelectorAll('#bar .tool').forEach(x=>{ x.classList.toggle('on',x===b); x.setAttribute('aria-pressed',x===b); });
+  firstInteraction();
+}));
+
+/* Build tool segments for this frame */
+const segA=new Float32Array(40*4), segB=new Float32Array(40*4), segC=new Float32Array(40*4);
+const pourU=new Float32Array(6*4);
+let segN=0, pourN=0, fingerEnergy=0;
+function addSeg(ax,ay,bx,by,R,z,type,str,vx,vy){
+  if(segN>=40) return; const i=segN*4;
+  segA[i]=ax; segA[i+1]=ay; segA[i+2]=bx; segA[i+3]=by;
+  segB[i]=R; segB[i+1]=z; segB[i+2]=type; segB[i+3]=str;
+  segC[i]=vx; segC[i+1]=vy; segN++;
+}
+function buildTools(dt){
+  segN=0; pourN=0; fingerEnergy=0;
+  for(const pt of pointers.values()){
+    const lx=pt.last[0], ly=pt.last[1];
+    const dx=pt.x-lx, dy=pt.y-ly; const dist=Math.hypot(dx,dy);
+    const ivx=dx/dt, ivy=dy/dt;
+    pt.vx+= (ivx-pt.vx)*0.5; pt.vy+=(ivy-pt.vy)*0.5;
+    pt.moved+=dist;
+    if(dist>0.2){ const k=Math.min(1,dist/3); pt.dir=[pt.dir[0]*(1-k)+dx/dist*k, pt.dir[1]*(1-k)+dy/dist*k]; const l=Math.hypot(pt.dir[0],pt.dir[1])||1; pt.dir=[pt.dir[0]/l,pt.dir[1]/l]; }
+    const age=(performance.now()-pt.t0)/1000;
+    const sp=Math.hypot(pt.vx,pt.vy);
+    if(tool==='finger'||tool==='rake'){
+      pt.hist.unshift([lx,ly,pt.x,pt.y]); if(pt.hist.length>3) pt.hist.length=3;
+      const plunge=Math.min(1, age/0.09);
+      if(tool==='finger'){
+        const zt=cells.fingerZ; const z = cells.h0*1.25*(1-plunge)+zt*plunge;
+        for(const s of pt.hist) addSeg(s[0],s[1],s[2],s[3],cells.fingerR,z,0,1,pt.vx,pt.vy);
+        fingerEnergy+=Math.min(1,sp/120)*plunge;
+      } else {
+        const zt=cells.h0*P.rakeZFrac; const z = cells.h0*1.25*(1-plunge)+zt*plunge;
+        const nx=-pt.dir[1], ny=pt.dir[0];
+        for(let k=0;k<P.rakeN;k++){
+          const o=(k-(P.rakeN-1)/2)*cells.rakeGap;
+          for(let j=0;j<Math.min(2,pt.hist.length);j++){ const s=pt.hist[j]; addSeg(s[0]+nx*o,s[1]+ny*o,s[2]+nx*o,s[3]+ny*o,cells.rakeR,z,0,1,pt.vx,pt.vy); }
+        }
+        fingerEnergy+=Math.min(1,sp/120)*plunge*0.8;
+      }
+      if(sp>220 && Math.random()<Math.min(0.9,sp/900)) spray(pt, sp);
+    } else if(tool==='smooth'){
+      addSeg(lx,ly,pt.x,pt.y,cells.smoothR,0,1,1,pt.vx,pt.vy);
+      fingerEnergy+=Math.min(1,sp/200)*0.6;
+    } else if(tool==='pour'){
+      if(pourN<6){ const i=pourN*4; pourU[i]=pt.x; pourU[i+1]=pt.y; pourU[i+2]=cells.pourR; pourU[i+3]=P.pourRate*Math.pow(cells.h0,3)*14; pourN++; }
+      pourParticles(pt,dt);
+      fingerEnergy+=0.25;
+    }
+    pt.last=[pt.x,pt.y];
+  }
+}
+
+/* ------------------------------------------------------------------ */
+/* Particles                                                           */
+/* ------------------------------------------------------------------ */
+const MAXP=2500; const parts=new Float32Array(MAXP*8); let np=0;
+const partBuf=new Float32Array(MAXP*4);
+const pvao=gl.createVertexArray(); const pbuf=gl.createBuffer();
+gl.bindVertexArray(pvao); gl.bindBuffer(gl.ARRAY_BUFFER,pbuf); gl.bufferData(gl.ARRAY_BUFFER,partBuf.byteLength,gl.DYNAMIC_DRAW);
+gl.enableVertexAttribArray(0); gl.vertexAttribPointer(0,4,gl.FLOAT,false,0,0); gl.bindVertexArray(null);
+function addPart(x,y,z,vx,vy,vz,life){
+  if(np>=MAXP) return; const i=np*8; parts[i]=x;parts[i+1]=y;parts[i+2]=z;parts[i+3]=vx;parts[i+4]=vy;parts[i+5]=vz;parts[i+6]=Math.random();parts[i+7]=life; np++;
+}
+function pourParticles(pt,dt){
+  const n=Math.round(260*dt*60/8);
+  for(let k=0;k<n;k++){
+    const a=Math.random()*6.283, r=Math.sqrt(Math.random())*cells.pourR*0.45;
+    addPart(pt.x+Math.cos(a)*r, pt.y+Math.sin(a)*r, cells.h0*(5+Math.random()*7), (Math.random()-0.5)*6, (Math.random()-0.5)*6, -cells.G*0.05*(0.6+Math.random()*0.5), 0);
+  }
+}
+function spray(pt,sp){
+  const n=1+Math.floor(Math.random()*3);
+  for(let k=0;k<n;k++){
+    const a=Math.atan2(pt.vy,pt.vx)+(Math.random()-0.5)*1.4;
+    const v=sp*(0.25+Math.random()*0.35);
+    addPart(pt.x+pt.dir[0]*cells.fingerR, pt.y+pt.dir[1]*cells.fingerR, cells.h0*1.1, Math.cos(a)*v, Math.sin(a)*v, cells.G*0.012*(0.5+Math.random()), 1);
+  }
+}
+function stepParticles(dt, gx, gy, gz){
+  let j=0;
+  for(let i=0;i<np;i++){
+    const o=i*8;
+    let x=parts[o],y=parts[o+1],z=parts[o+2],vx=parts[o+3],vy=parts[o+4],vz=parts[o+5],s=parts[o+6],life=parts[o+7];
+    vx+=gx*dt*0.15; vy+=gy*dt*0.15; vz-=gz*dt*0.18;
+    x+=vx*dt; y+=vy*dt; z+=vz*dt;
+    const ground=cells.h0;
+    if(z<=ground){
+      if(life<1.5 && Math.random()<0.45){ z=ground; vz=Math.abs(vz)*0.22; const a=Math.random()*6.283, b=12+Math.random()*30; vx=vx*0.3+Math.cos(a)*b; vy=vy*0.3+Math.sin(a)*b; life+=1; }
+      else continue;
+    }
+    if(x<0||y<0||x>NX||y>NY) continue;
+    const d=j*8; parts[d]=x;parts[d+1]=y;parts[d+2]=z;parts[d+3]=vx;parts[d+4]=vy;parts[d+5]=vz;parts[d+6]=s;parts[d+7]=life;
+    partBuf[j*4]=x; partBuf[j*4+1]=y; partBuf[j*4+2]=Math.max(0,z-ground); partBuf[j*4+3]=s; j++;
+  }
+  np=j;
+}
+
+/* ------------------------------------------------------------------ */
+/* Device motion → gravity in the device frame                         */
+/* ------------------------------------------------------------------ */
+const motion={granted:false, gotOrient:false, gotMotion:false, up:null, aig:null, sign:0, Rlow:[0,0,9.81], shake:0, asked:false, lastEvt:0};
+function onOrient(e){
+  if(e.beta==null||e.gamma==null) return;
+  motion.gotOrient=true; motion.lastEvt=performance.now();
+  const b=e.beta*Math.PI/180, g=e.gamma*Math.PI/180;
+  motion.up=[-Math.cos(b)*Math.sin(g), Math.sin(b), Math.cos(b)*Math.cos(g)];
+}
+function onMotion(e){
+  const a=e.accelerationIncludingGravity; if(!a||a.x==null) return;
+  motion.gotMotion=true; motion.lastEvt=performance.now();
+  motion.aig=[a.x,a.y,a.z];
+  if(motion.up){ const d=a.x*motion.up[0]+a.y*motion.up[1]+a.z*motion.up[2]; motion.sign=motion.sign*0.92+Math.sign(d)*0.08; }
+}
+function listenMotion(){
+  addEventListener('deviceorientation',onOrient); addEventListener('devicemotion',onMotion);
+  motion.granted=true;
+  setTimeout(()=>{ if(!motion.gotOrient && !motion.gotMotion){ showPad(true); toast('Motion sensors are not available here. Use the tilt pad, or open the page directly on your phone.'); } updateTiltBtn(); },1500);
+  updateTiltBtn();
+}
+function requestMotionPermission(){
+  if(motion.asked) return; motion.asked=true;
+  const DME=window.DeviceMotionEvent, DOE=window.DeviceOrientationEvent;
+  if(DME && typeof DME.requestPermission==='function'){
+    Promise.all([DME.requestPermission().catch(()=>'denied'), DOE&&DOE.requestPermission?DOE.requestPermission().catch(()=>'denied'):'granted'])
+      .then(r=>{ if(r[0]==='granted'||r[1]==='granted') listenMotion(); else { showPad(true); toast('Tilt is off. Tap Tilt to try again, or use the tilt pad.'); motion.asked=false; updateTiltBtn(); } });
+  } else if(isTouch){ listenMotion(); }
+}
+// Gravity reaction vector in the device frame (m/s^2, spec convention: +z when lying face-up)
+function deviceReaction(){
+  const m=motion;
+  if(m.aig && m.up && Math.abs(m.sign)>0.3){ const s=Math.sign(m.sign); return [m.aig[0]*s,m.aig[1]*s,m.aig[2]*s]; }
+  if(m.up) return [m.up[0]*9.81,m.up[1]*9.81,m.up[2]*9.81];
+  if(m.aig){ const s=isIOS?-1:1; return [m.aig[0]*s,m.aig[1]*s,m.aig[2]*s]; }
+  return null;
+}
+
+/* Simulated tilt: pad, keyboard, shake key */
+const padEl=$('#pad'), puck=$('#puck');
+let padV=[0,0], padActive=false, keyTilt=[0,0], shakeT=0;
+function showPad(on){ padEl.hidden=!on; }
+padEl.addEventListener('pointerdown',e=>{ e.preventDefault(); padEl.setPointerCapture(e.pointerId); padActive=true; padMove(e); firstInteraction(); });
+padEl.addEventListener('pointermove',e=>{ if(padActive) padMove(e); });
+const padEnd=()=>{ padActive=false; };
+padEl.addEventListener('pointerup',padEnd); padEl.addEventListener('pointercancel',padEnd);
+function padMove(e){ const r=padEl.getBoundingClientRect(); let x=(e.clientX-r.left)/r.width*2-1, y=(e.clientY-r.top)/r.height*2-1; const l=Math.hypot(x,y); if(l>1){x/=l;y/=l;} padV=[x,y]; }
+const keys=new Set();
+addEventListener('keydown',e=>{ const k=e.key; if(['ArrowLeft','ArrowRight','ArrowUp','ArrowDown','a','d','w','s',' '].includes(k)){ e.preventDefault(); keys.add(k); if(k===' ') shakeT=0.6; firstInteraction(); } });
+addEventListener('keyup',e=>keys.delete(e.key));
+let simTilt=[0,0]; // in screen space (x right, y down), magnitude 0..1
+function simulatedReaction(dt){
+  let tx=0,ty=0;
+  if(keys.has('ArrowLeft')||keys.has('a')) tx-=1; if(keys.has('ArrowRight')||keys.has('d')) tx+=1;
+  if(keys.has('ArrowUp')||keys.has('w')) ty-=1; if(keys.has('ArrowDown')||keys.has('s')) ty+=1;
+  let target = padActive ? padV : [tx*0.85,ty*0.85];
+  const k=1-Math.exp(-dt*(padActive?14:6));
+  simTilt[0]+=(target[0]-simTilt[0])*k; simTilt[1]+=(target[1]-simTilt[1])*k;
+  puck.style.transform=`translate(${simTilt[0]*36}px,${simTilt[1]*36}px)`;
+  const mag=Math.min(1,Math.hypot(simTilt[0],simTilt[1])); const th=mag*62*Math.PI/180;
+  const dir = mag>1e-4 ? [simTilt[0]/mag, simTilt[1]/mag] : [0,0];
+  // convert screen tilt into a natural-frame direction
+  const nx=R0[0]*dir[0]+R0[1]*dir[1], ny=R1[0]*dir[0]+R1[1]*dir[1];
+  // reaction vector: sand should flow toward dir => gravity in-plane = dir*sin(th)
+  let R=[-nx*Math.sin(th)*9.81, ny*Math.sin(th)*9.81, Math.cos(th)*9.81];
+  if(shakeT>0){ shakeT-=dt; const ph=performance.now()/1000*15*6.283; R[0]+=Math.sin(ph)*14; R[1]+=Math.cos(ph*1.3)*9; R[2]+=Math.sin(ph*0.7)*6; }
+  return R;
+}
+
+/* ------------------------------------------------------------------ */
+/* Audio: granular hiss + crunch driven by the measured sand flow      */
+/* ------------------------------------------------------------------ */
+let audio=null, soundOn=true;
+function initAudio(){
+  if(audio) { audio.ctx.resume && audio.ctx.resume(); return; }
+  const AC=window.AudioContext||window.webkitAudioContext; if(!AC) return;
+  try{
+    const ctx=new AC();
+    const sr=ctx.sampleRate, len=Math.floor(sr*2.5);
+    const buf=ctx.createBuffer(1,len,sr), d=buf.getChannelData(0);
+    for(let i=0;i<len;i++) d[i]=(Math.random()*2-1)*0.18;
+    for(let k=0;k<14000;k++){
+      const pos=Math.floor(Math.random()*len), amp=Math.pow(Math.random(),3)*0.9*(Math.random()<0.5?-1:1);
+      const dec=(0.00015+Math.random()*0.0011)*sr, f=(1800+Math.random()*7000)/sr*6.283;
+      const n=Math.min(len-pos, Math.floor(dec*5));
+      for(let j=0;j<n;j++) d[pos+j]+=amp*Math.exp(-j/dec)*Math.sin(f*j);
+    }
+    let mx=0; for(let i=0;i<len;i++) mx=Math.max(mx,Math.abs(d[i])); for(let i=0;i<len;i++) d[i]/=mx;
+    const mk=(rate)=>{ const s=ctx.createBufferSource(); s.buffer=buf; s.loop=true; s.playbackRate.value=rate; s.start(0, Math.random()*2); return s; };
+    const master=ctx.createGain(); master.gain.value=0.9;
+    const comp=ctx.createDynamicsCompressor(); master.connect(comp); comp.connect(ctx.destination);
+    const s1=mk(1), bp=ctx.createBiquadFilter(); bp.type='bandpass'; bp.frequency.value=3200; bp.Q.value=0.6;
+    const g1=ctx.createGain(); g1.gain.value=0; s1.connect(bp); bp.connect(g1); g1.connect(master);
+    const s2=mk(0.5), lp=ctx.createBiquadFilter(); lp.type='lowpass'; lp.frequency.value=1100;
+    const g2=ctx.createGain(); g2.gain.value=0; s2.connect(lp); lp.connect(g2); g2.connect(master);
+    audio={ctx,g1,g2,bp};
+  }catch(e){ audio=null; }
+}
+function updateAudio(flow, finger){
+  if(!audio) return;
+  const t=audio.ctx.currentTime;
+  const on=soundOn?1:0;
+  const hiss=on*Math.min(0.9, flow*0.75+finger*0.55);
+  const rum=on*Math.min(0.8, flow*0.9);
+  audio.g1.gain.setTargetAtTime(hiss*0.55, t, 0.05);
+  audio.g2.gain.setTargetAtTime(rum*0.7, t, 0.08);
+  audio.bp.frequency.setTargetAtTime(2400+finger*2600+flow*800, t, 0.1);
+}
+
+/* Haptics (Android Chrome supports vibration; iOS Safari does not) */
+let lastBuzz=0;
+function haptics(level){
+  if(!navigator.vibrate || level<0.15) return;
+  const now=performance.now(); const gap=140-110*Math.min(1,level);
+  if(now-lastBuzz>gap){ lastBuzz=now; try{ navigator.vibrate(Math.round(4+level*10)); }catch(e){} }
+}
+
+/* ------------------------------------------------------------------ */
+/* UI                                                                  */
+/* ------------------------------------------------------------------ */
+const hint=$('#hint'), toastEl=$('#toast');
+if(!isTouch) hint.textContent='Drag to draw. Arrow keys or the tilt pad tilt the tray. Space shakes it.';
+if(!isTouch) showPad(true);
+let started=false, wakeLock=null;
+function firstInteraction(){
+  if(soundOn) initAudio();
+  if(started) return; started=true;
+  setTimeout(()=>hint.classList.add('gone'), 2500);
+  try{ navigator.wakeLock && navigator.wakeLock.request('screen').then(w=>wakeLock=w).catch(()=>{}); }catch(e){}
+}
+let toastTimer=0;
+function toast(msg){ toastEl.textContent=msg; toastEl.classList.add('show'); clearTimeout(toastTimer); toastTimer=setTimeout(()=>toastEl.classList.remove('show'),4200); }
+const btnTilt=$('#btnTilt'), btnSound=$('#btnSound');
+function updateTiltBtn(){
+  const live = motion.gotOrient||motion.gotMotion;
+  btnTilt.classList.toggle('on', live);
+  btnTilt.classList.toggle('attn', isTouch && !live && !motion.granted);
+}
+btnTilt.addEventListener('click',()=>{
+  if(motion.gotOrient||motion.gotMotion){ showPad(padEl.hidden); return; }
+  motion.asked=false; requestMotionPermission();
+  if(!isTouch) toast('Tilt sensors are a phone feature. On a computer, use the arrow keys or the tilt pad.');
+});
+btnSound.addEventListener('click',()=>{ soundOn=!soundOn; btnSound.classList.toggle('on',soundOn); $('#sndWave').style.opacity=soundOn?1:0.15; if(soundOn) initAudio(); });
+btnSound.classList.toggle('on',soundOn);
+$('#btnReset').addEventListener('click',()=>{
+  const data=initialHeights(NX,NY,cs);
+  gl.bindTexture(gl.TEXTURE_2D,A[0]); gl.texSubImage2D(gl.TEXTURE_2D,0,0,0,NX,NY,gl.RGBA,gl.FLOAT,data);
+  gl.bindTexture(gl.TEXTURE_2D,B[0]); gl.texSubImage2D(gl.TEXTURE_2D,0,0,0,NX,NY,gl.RGBA,gl.FLOAT,new Float32Array(NX*NY*4));
+  np=0;
+});
+updateTiltBtn();
+if(isTouch && !(window.DeviceMotionEvent && typeof DeviceMotionEvent.requestPermission==='function')){ motion.asked=true; listenMotion(); }
+
+let resizeTimer=0;
+function onResize(){ clearTimeout(resizeTimer); resizeTimer=setTimeout(()=>setup(true),120); }
+addEventListener('resize',onResize);
+screen.orientation && screen.orientation.addEventListener && screen.orientation.addEventListener('change',onResize);
+addEventListener('orientationchange',onResize);
+document.addEventListener('visibilitychange',()=>{ if(document.visibilityState==='visible'&&wakeLock===null&&started){ try{ navigator.wakeLock&&navigator.wakeLock.request('screen').then(w=>wakeLock=w).catch(()=>{}); }catch(e){} } if(audio){ document.hidden?audio.ctx.suspend():soundOn&&audio.ctx.resume(); } });
+
+/* ------------------------------------------------------------------ */
+/* Main loop                                                           */
+/* ------------------------------------------------------------------ */
+setup(false);
+let last=performance.now(), simTime=0, frameN=0, flowLevel=0, massInfo=[0,0];
+let ema=16.7, lastQualityChange=performance.now();
+let Rf=[0,0,9.81], Rlow=[0,0,9.81], shake=0;
+const dbg = DEBUG ? (()=>{ const d=document.createElement('div'); d.id='dbg'; document.body.appendChild(d); return d; })() : null;
+window.__sand = { readH(){ const d=new Float32Array(NX*NY*4); gl.bindFramebuffer(gl.FRAMEBUFFER,fA[0]); gl.readPixels(0,0,NX,NY,gl.RGBA,gl.FLOAT,d); return Array.from(d); }, setTilt(x,y){ padActive=true; padV=[x,y]; }, P, cells, get N(){return [NX,NY,cs];}, get mass(){return massInfo;}, setQuality(i){ qi=i; resizeCanvas(); }, motion };
+
+function frame(now){
+  requestAnimationFrame(frame);
+  let dt=(now-last)/1000; last=now;
+  if(!(dt>0)) dt=1/60;
+  ema=ema*0.95+Math.min(dt*1000,100)*0.05;
+  dt=Math.min(dt,1/30);
+  simTime+=dt; frameN++;
+
+  // ---- gravity (device frame reaction vector -> sim) ----
+  let R = (motion.gotOrient||motion.gotMotion) && !padActive ? deviceReaction() : null;
+  if(!R) R=simulatedReaction(dt);
+  else if(shakeT>0){ const s=simulatedReaction(dt); R=[R[0]+s[0]-0,R[1]+s[1],R[2]]; }
+  for(let i=0;i<3;i++){ Rf[i]+= (R[i]-Rf[i])*Math.min(1,dt*40); Rlow[i]+=(R[i]-Rlow[i])*Math.min(1,dt*3); }
+  const jerk=Math.hypot(Rf[0]-Rlow[0],Rf[1]-Rlow[1],Rf[2]-Rlow[2]);
+  shake=Math.max(shake*Math.exp(-dt*3), Math.min(0.85,(jerk-2.5)/14));
+  const G=cells.G;
+  const gx=-Rf[0]/9.81*G, gy=Rf[1]/9.81*G;
+  let gz=Rf[2]/9.81*G; gz=Math.max(gz, 0.28*G);
+  // light: fixed in the room, so it moves across the tray as the device tilts
+  const ul=Math.hypot(Rlow[0],Rlow[1],Rlow[2])||1;
+  const up=[Rlow[0]/ul, -Rlow[1]/ul, Rlow[2]/ul]; // sim frame (x right, y down, z up)
+  let d0=[-0.62,-0.78,0]; const dd=d0[0]*up[0]+d0[1]*up[1];
+  let dh=[d0[0]-up[0]*dd, d0[1]-up[1]*dd, -up[2]*dd]; const dl=Math.hypot(dh[0],dh[1],dh[2])||1; dh=dh.map(v=>v/dl);
+  const E=P.lightElev*Math.PI/180;
+  let L=[up[0]*Math.sin(E)+dh[0]*Math.cos(E), up[1]*Math.sin(E)+dh[1]*Math.cos(E), up[2]*Math.sin(E)+dh[2]*Math.cos(E)];
+  if(L[2]<0.12){ L[2]=0.12; }
+
+  // ---- tools ----
+  buildTools(dt);
+  run(progs.tool, fTool, u=>{
+    gl.uniform2i(u.uN,NX,NY); gl.uniform1i(u.uSegN,segN);
+    gl.uniform4fv(u.uSegA,segA); gl.uniform4fv(u.uSegB,segB); gl.uniform4fv(u.uSegC,segC);
+  });
+
+  // ---- physics substeps ----
+  const sub=QUALITY[qi].sub; const sdt=dt/sub;
+  const vmax=0.5/sdt;
+  for(let s=0;s<sub;s++){
+    run(progs.vel, fA[1], u=>{
+      gl.uniform2i(u.uN,NX,NY); bindTex(progs.vel,'uA',0,A[0]); bindTex(progs.vel,'uTool',1,ToolT);
+      gl.uniform1f(u.uDt,sdt); gl.uniform1f(u.uMu,P.mu); gl.uniform1f(u.uGz,gz); gl.uniform1f(u.uHmax,cells.hmax);
+      gl.uniform1f(u.uKpen,G*0.6); gl.uniform1f(u.uVmax,vmax); gl.uniform1f(u.uShake,shake); gl.uniform1f(u.uTime,simTime);
+      gl.uniform1f(u.uDamp,P.damp); gl.uniform2f(u.uGxy,gx,gy);
+    });
+    run(progs.k, fK, u=>{
+      gl.uniform2i(u.uN,NX,NY); bindTex(progs.k,'uA',0,A[1]); bindTex(progs.k,'uTool',1,ToolT);
+      gl.uniform1f(u.uDt,sdt); gl.uniform1f(u.uMuT,P.muTalus); gl.uniform1f(u.uTal,P.talus); gl.uniform1f(u.uLayer,cells.layer);
+    });
+    run(progs.h, fA[0], u=>{
+      gl.uniform2i(u.uN,NX,NY); bindTex(progs.h,'uA',0,A[1]); bindTex(progs.h,'uTool',1,ToolT); bindTex(progs.h,'uK',2,Kt);
+      gl.uniform1f(u.uDt,sdt); gl.uniform1f(u.uMuT,P.muTalus); gl.uniform1f(u.uTal,P.talus); gl.uniform1f(u.uLayer,cells.layer);
+      gl.uniform1i(u.uPourN,pourN); gl.uniform4fv(u.uPour,pourU);
+    });
+    run(progs.t, fB[1], u=>{
+      gl.uniform2i(u.uN,NX,NY); bindTex(progs.t,'uA',0,A[1]); bindTex(progs.t,'uB',1,B[0]); gl.uniform1f(u.uDt,sdt);
+    });
+    B.reverse(); fB.reverse();
+  }
+
+  // ---- render prep ----
+  run(progs.surf, fSurfA, u=>{ gl.uniform2i(u.uN,NX,NY); bindTex(progs.surf,'uA',0,A[0]); });
+  gl.bindTexture(gl.TEXTURE_2D,SurfA); gl.generateMipmap(gl.TEXTURE_2D);
+  run(progs.light, fSurfB, u=>{ gl.uniform2i(u.uN,NX,NY); bindTex(progs.light,'uS',0,SurfA); gl.uniform3f(u.uL,L[0],L[1],L[2]); gl.uniform1f(u.uWall,0.0); });
+
+  // ---- final ----
+  const px=canvas._px;
+  run(progs.final, null, u=>{
+    gl.uniform2i(u.uN,NX,NY);
+    bindTex(progs.final,'uS',0,SurfA); bindTex(progs.final,'uSL',1,SurfB); bindTex(progs.final,'uB',2,B[0]);
+    bindTex(progs.final,'uG0',3,grain0); bindTex(progs.final,'uG1',4,grain1); bindTex(progs.final,'uG2',5,grain2);
+    gl.uniform2f(u.uCanvas,canvas.width,canvas.height); gl.uniform1f(u.uPx,px);
+    gl.uniform2f(u.uR0,R0[0],R0[1]); gl.uniform2f(u.uR1,R1[0],R1[1]); gl.uniform2f(u.uROff,ROFF[0],ROFF[1]);
+    gl.uniform1f(u.uCs,cs); gl.uniform1f(u.uGS, 1.9); gl.uniform1f(u.uGT,GT);
+    gl.uniform3f(u.uL,L[0],L[1],L[2]); gl.uniform1f(u.uTime,simTime); gl.uniform1f(u.uExposure,0.62);
+  });
+
+  // ---- particles ----
+  stepParticles(dt, gx, gy, gz);
+  if(np>0){
+    gl.useProgram(progs.part.p); const u=progs.part.u;
+    gl.uniform2f(u.uR0,R0[0],R0[1]); gl.uniform2f(u.uR1,R1[0],R1[1]); gl.uniform2f(u.uROff,ROFF[0],ROFF[1]);
+    gl.uniform2f(u.uScreen,vw,vh); gl.uniform1f(u.uCs,cs); gl.uniform1f(u.uPx,px); gl.uniform3f(u.uL,L[0],L[1],L[2]); gl.uniform1f(u.uExposure,0.62);
+    gl.bindVertexArray(pvao); gl.bindBuffer(gl.ARRAY_BUFFER,pbuf); gl.bufferSubData(gl.ARRAY_BUFFER,0,partBuf,0,np*4);
+    gl.enable(gl.BLEND); gl.blendFunc(gl.SRC_ALPHA,gl.ONE_MINUS_SRC_ALPHA);
+    gl.uniform1f(u.uShadow,1); gl.drawArrays(gl.POINTS,0,np);
+    gl.uniform1f(u.uShadow,0); gl.drawArrays(gl.POINTS,0,np);
+    gl.disable(gl.BLEND); gl.bindVertexArray(null);
+  }
+
+  // ---- async readback of flow for sound / haptics ----
+  if(fence){
+    const st=gl.clientWaitSync(fence,0,0);
+    if(st===gl.ALREADY_SIGNALED||st===gl.CONDITION_SATISFIED){
+      gl.deleteSync(fence); fence=null;
+      gl.bindBuffer(gl.PIXEL_PACK_BUFFER,pbo); gl.getBufferSubData(gl.PIXEL_PACK_BUFFER,0,redData); gl.bindBuffer(gl.PIXEL_PACK_BUFFER,null);
+      let m=0,k=0; for(let i=0;i<RED*RED;i++){ m+=redData[i*4]; k+=redData[i*4+1]; }
+      massInfo=[m,k];
+      const norm=k/(NX*NY*cells.h0*cells.G*0.02);
+      flowLevel=1-Math.exp(-norm*1.5);
+    }
+  } else if(frameN%3===0){
+    const bx=Math.ceil(NX/RED), by=Math.ceil(NY/RED);
+    run(progs.reduce, fRed, u=>{ gl.uniform2i(u.uN,NX,NY); gl.uniform2i(u.uBlock,bx,by); bindTex(progs.reduce,'uA',0,A[0]); });
+    gl.bindBuffer(gl.PIXEL_PACK_BUFFER,pbo); gl.readPixels(0,0,RED,RED,gl.RGBA,gl.FLOAT,0); gl.bindBuffer(gl.PIXEL_PACK_BUFFER,null);
+    fence=gl.fenceSync(gl.SYNC_GPU_COMMANDS_COMPLETE,0);
+  }
+  const fingerLvl=Math.min(1,fingerEnergy);
+  updateAudio(flowLevel, fingerLvl);
+  if(pointers.size && (tool==='finger'||tool==='rake')) haptics(fingerLvl*0.7+flowLevel*0.5); else if(shake>0.2) haptics(shake);
+
+  // ---- adaptive quality ----
+  if(!FIXQ && now-lastQualityChange>2500 && frameN>90){
+    if(ema>21 && qi>0){ qi--; resizeCanvas(); lastQualityChange=now; ema=16.7; }
+  }
+  if(dbg && frameN%10===0) dbg.textContent=`${(1000/ema).toFixed(0)} fps  q${qi}  grid ${NX}x${NY} cs${cs.toFixed(2)}\nmass ${massInfo[0].toFixed(0)} flow ${flowLevel.toFixed(2)}\ng ${(gx/G).toFixed(2)} ${(gy/G).toFixed(2)} ${(gz/G).toFixed(2)} shake ${shake.toFixed(2)}`;
+}
+requestAnimationFrame(frame);
+})();
+</script>
+</body>
+</html>
