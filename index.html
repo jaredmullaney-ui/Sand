@@ -33,6 +33,8 @@ body{overscroll-behavior:none;touch-action:none;-webkit-user-select:none;user-se
 @keyframes pulse{50%{background:rgba(240,200,140,.22);}}
 #bar .sep{width:1px;height:30px;background:var(--line);margin:0 3px;}
 @media (max-width:420px){#bar button{width:44px;height:48px;font-size:9px}#bar button svg{width:21px;height:21px}#bar{gap:1px;padding:4px}}
+@media (max-width:392px){#bar button{width:40px}#bar .sep{margin:0 2px}}
+@media (max-width:350px){#bar button{width:36px;font-size:8.5px}}
 #hint{position:fixed;left:50%;top:calc(18px + env(safe-area-inset-top,0px));transform:translateX(-50%);padding:9px 16px;border-radius:999px;background:var(--glass);-webkit-backdrop-filter:blur(14px);backdrop-filter:blur(14px);border:1px solid var(--line);font:500 13px/1.35 var(--font);color:var(--ink);text-align:center;white-space:nowrap;pointer-events:none;transition:opacity .9s;max-width:calc(100vw - 32px);white-space:normal;width:max-content;}
 #hint.gone{opacity:0;}
 #toast{position:fixed;left:50%;top:calc(64px + env(safe-area-inset-top,0px));transform:translateX(-50%);padding:8px 14px;border-radius:12px;background:var(--glass-hi);border:1px solid var(--line);font:500 12.5px/1.35 var(--font);max-width:min(340px,calc(100vw - 32px));text-align:center;pointer-events:none;opacity:0;transition:opacity .5s;}
@@ -60,6 +62,8 @@ body{overscroll-behavior:none;touch-action:none;-webkit-user-select:none;user-se
     <svg viewBox="0 0 24 24"><path d="M3 15c3-3 5 0 9-2s5-1 9 1"/><path d="M5 19h14"/><path d="M8 10c2-4 6-5 8-4"/></svg><span>Smooth</span></button>
   <button class="tool" data-tool="pour" aria-pressed="false" title="Pour: add sand">
     <svg viewBox="0 0 24 24"><path d="M8 3h8l-2 6h-4z"/><path d="M12 11v3M11 16v1M13 17v1M12 19v1"/><path d="M5 21c2-1.5 4.5-2 7-2s5 .5 7 2"/></svg><span>Pour</span></button>
+  <button id="btnCastle" aria-pressed="false" title="Castle: tap here, then tap the sand to build one">
+    <svg viewBox="0 0 24 24"><path d="M3.5 21V8.5h2.5v2h2v-2h2.5V12h3V8.5H16v2h2v-2h2.5V21z"/><path d="M10 21v-3.5a2 2 0 0 1 4 0V21"/><path d="M12 8.5V3l3 1.2-3 1.2"/></svg><span>Castle</span></button>
   <div class="sep" aria-hidden="true"></div>
   <button id="btnTilt" title="Tilt sensors">
     <svg viewBox="0 0 24 24"><rect x="7" y="3" width="10" height="18" rx="2" transform="rotate(-14 12 12)"/><path d="M3 8a10 10 0 0 1 2-3M21 16a10 10 0 0 1-2 3"/></svg><span>Tilt</span></button>
@@ -175,7 +179,8 @@ ivec2 cl(ivec2 p){ return clamp(p, ivec2(0), uN-ivec2(1)); }
 float hash12(vec2 p){ vec3 p3=fract(vec3(p.xyx)*.1031); p3+=dot(p3,p3.yzx+33.33); return fract((p3.x+p3.y)*p3.z); }
 float vnoise(vec2 x){ vec2 i=floor(x), f=x-i; f=f*f*(3.-2.*f);
   return mix(mix(hash12(i),hash12(i+vec2(1,0)),f.x), mix(hash12(i+vec2(0,1)),hash12(i+vec2(1,1)),f.x), f.y); }
-float mobOf(vec4 s, vec4 t){ return t.x<5e3 ? s.x-min(s.x,t.x) : s.x; }
+// mobile part of a column: everything above the tool's locked height and above packed castle sand (A.w)
+float mobOf(vec4 s, vec4 t){ return s.x-min(s.x, max(s.w, t.x<5e3 ? t.x : 0.)); }
 `;
 
 /* Tool footprint: x = locked height (finger bottom), yz = push direction, w = fluidize */
@@ -301,6 +306,9 @@ void main(){
       if(pb){ d+= comp==0?tb.y:tb.z; c+=1.; }
       un = d/c*uVmax;
     }
+    // packed castle sand never slides: a face whose donor column is locked carries no flow, so the
+    // steep castle walls neither push the loose sand at their foot away nor leak speed into the flow
+    if((un>0. && ma<1e-4) || (un<0. && mb<1e-4)) un=0.;
     outv[comp]=clamp(un,-uVmax,uVmax);
   }
   o=vec4(s.x,outv,s.w);
@@ -348,6 +356,43 @@ void main(){
                 - faceLim(p,p+ivec2(0,1),1) + faceLim(p-ivec2(0,1),p,1);
   for(int i=0;i<6;i++){ if(i>=uPourN) break; vec4 q=uPour[i]; vec2 d=vec2(p)-q.xy; h += q.w*uDt*exp(-dot(d,d)/(q.z*q.z))/(3.14159*q.z*q.z); }
   o=vec4(max(h,0.), s.yzw);
+}`;
+
+/* Castle integrity: A.w is the height of packed (cohesive) sand in each column. Packed sand does not flow;
+   when it gives way, w drops and the sand above it becomes ordinary loose sand that the physics moves.
+   Mass is untouched here: only the packed/loose split changes. */
+const FS_PACK = COMMON + `
+uniform sampler2D uA; uniform sampler2D uTool;
+uniform float uDt, uH0, uShake, uTilt, uSeed; uniform vec2 uDown;
+out vec4 o;
+float W(ivec2 p){ return min(texelFetch(uA,cl(p),0).w, texelFetch(uA,cl(p),0).x); }
+float Hh(ivec2 p){ return texelFetch(uA,cl(p),0).x; }
+void main(){
+  ivec2 p=ivec2(gl_FragCoord.xy);
+  vec4 s=texelFetch(uA,p,0);
+  float w=min(s.w,s.x);
+  if(w<=1e-4){ o=vec4(s.xyz,0.); return; }
+  vec4 t=texelFetch(uTool,p,0);
+  if(t.x<5e3) w=min(w,max(t.x,0.));            // a finger or rake through the castle breaks it
+  w -= t.w*uDt*uH0*5.;                          // the smoothing hand levels it
+  // support: packed sand needs at least two packed neighbours of comparable height,
+  // so splinters and lone pillars left by a swipe fall in, but cut walls stay standing
+  int sup=0;
+  for(int k=0;k<4;k++){
+    ivec2 n=p+(k==0?ivec2(1,0):k==1?ivec2(-1,0):k==2?ivec2(0,1):ivec2(0,-1));
+    float wn=W(n);
+    if(wn>=w*0.45 || wn>=w-1.2*uH0) sup++;
+  }
+  float nz=hash12(vec2(p)*1.7+uSeed), nzS=vnoise(vec2(p)*0.35);
+  float rate=0.;
+  if(sup<2) rate+=3.*(0.5+nz);
+  // shaking and steep tilts: faces exposed on the downhill side give way first, in clumps
+  ivec2 dn=ivec2(round(uDown));
+  float drop=clamp((w-Hh(p+dn))/uH0,0.,3.);
+  float load=uShake*5.+uTilt*2.5;
+  rate+=load*(0.3+0.6*drop+0.6*nzS)*(0.5+nz);
+  w-=rate*uH0*uDt;
+  o=vec4(s.xyz,max(w,0.));
 }`;
 
 /* Grain-coordinate offset advection: grains travel with the flow */
@@ -401,7 +446,9 @@ void main(){
   vec4 s=texelFetch(uA,p,0);
   float gx=0.5*(H(p+ivec2(1,0))-H(p-ivec2(1,0)));
   float gy=0.5*(H(p+ivec2(0,1))-H(p-ivec2(0,1)));
-  o=vec4(s.x,gx,gy,length(s.yz));
+  // w: how much of the visible surface is packed castle sand (a thin loose dusting still counts)
+  float pk = s.w>0.01 ? 1.-smoothstep(0.15,0.9,s.x-s.w) : 0.;
+  o=vec4(s.x,gx,gy,pk);
 }`;
 
 /* Soft heightfield shadows from the light + multi-scale ambient occlusion */
@@ -567,6 +614,7 @@ void main(){
   vec2 tc=nat/uCs;               // texel coords (cell i spans [i,i+1])
   vec2 size=vec2(uN);
   vec4 S=bicubic(uS, tc, size);
+  float pk=clamp(S.w,0.,1.);     // packed castle sand
   vec2 SL=bicubic(uSL, tc, size).xy;
   // grain coordinates advected with the sand
   vec2 c=tc-0.5; ivec2 i0=ivec2(floor(c)); vec2 f=c-vec2(i0);
@@ -604,9 +652,11 @@ void main(){
   vec2 pu=nat+ofs*uCs;
   float pn=vnoise(pu*(1./90.))*0.55+vnoise(pu*(1./31.)+17.)*0.30+vnoise(pu*(1./11.)+5.)*0.15;
   alb*=mix(vec3(0.86,0.88,0.92), vec3(1.08,1.05,1.0), pn);
+  // packed castle sand was pressed damp: slightly darker and richer, its grains pressed flat
+  alb*=mix(vec3(1.), vec3(0.84,0.80,0.75), pk);
   float h=S.x;
   vec3 Nm=normalize(vec3(-S.y,-S.z,1.));
-  vec2 gn=(g2.xy*2.-1.);
+  vec2 gn=(g2.xy*2.-1.)*(1.-0.45*pk);
   vec3 N=normalize(Nm+vec3(gn,0.));
   vec3 L=normalize(uL);
   float sh=clamp(SL.x,0.,1.), ao=SL.y;
@@ -619,6 +669,8 @@ void main(){
     gs=min(gs, clamp(1.-(hn-gh-dpx*tanE*0.36)*3.4, 0.,1.));
   }
   float cav=smoothstep(0.0,0.5,gh)*g2.z;      // 0 deep in the gaps and crevices between grains
+  cav=mix(cav, 0.7+0.3*cav, pk);               // packed: grains pressed together, shallower gaps
+  gs=mix(gs, 1., 0.65*pk);                     // ... and no grain sticking up to cast a contact shadow
   float diff=roughDiffuse(N,L,0.3);
   // let the sculpted relief read a little stronger than the grain-scale shading would give alone
   float ndlM=max(dot(Nm,L),0.);
@@ -633,7 +685,7 @@ void main(){
   vec3 fn=normalize(vec3((g1.xy*2.-1.)*0.7,1.)+vec3(Nm.xy,0.));
   vec3 Hh=normalize(L+vec3(0.,0.,1.));
   float gl=pow(max(dot(fn,Hh),0.),900.)*step(0.8,g1.z)*smoothstep(0.6,0.95,g1.w);
-  col += uSun*gl*10.*sh*gs;
+  col += uSun*gl*10.*sh*gs*(1.-0.7*pk);
   // tray floor (dark slate) where the sand has been pushed away
   float cov=smoothstep(-0.06,0.06, h*0.6 - 0.62*(1.-gh) - 0.03);
   float sd=0.05+0.35*smoothstep(0.0,0.8,h);                 // loose grains left on the floor, denser near the sand
@@ -702,7 +754,7 @@ try{
     tool:program(FS_TOOL), vel:program(FS_VEL), k:program(FS_K), h:program(FS_H), t:program(FS_T),
     surf:program(FS_SURF), light:program(FS_LIGHT), reduce:program(FS_REDUCE),
     grain:program(FS_GRAIN), grainN:program(FS_GRAINN), final:program(FS_FINAL),
-    part:program(FS_PART, VS_PART),
+    part:program(FS_PART, VS_PART), pack:program(FS_PACK),
   };
 }catch(e){ fail('The sand simulation failed to start on this device: '+e.message); return; }
 
@@ -836,7 +888,7 @@ function resample(nx,ny,c){
   const sx=NX/nx, sy=NY/ny, scaleH=cs/c;
   for(let y=0;y<ny;y++) for(let x=0;x<nx;x++){
     const ox=Math.min(NX-1,Math.floor((x+0.5)*sx)), oy=Math.min(NY-1,Math.floor((y+0.5)*sy));
-    out[(y*nx+x)*4]=old[(oy*NX+ox)*4]*scaleH;
+    out[(y*nx+x)*4]=old[(oy*NX+ox)*4]*scaleH; out[(y*nx+x)*4+3]=old[(oy*NX+ox)*4+3]*scaleH;
   }
   return out;
 }
@@ -855,8 +907,10 @@ const pointers=new Map();
 function newPointer(x,y){ return {x,y,hist:[[x,y,x,y]],last:[x,y],vx:0,vy:0,t0:simTime,dir:[1,0],z:1,moved:0}; }
 function cellPos(e){ const r=canvas.getBoundingClientRect(); const n=toNat(e.clientX-r.left, e.clientY-r.top); return [n[0]/cs, n[1]/cs]; }
 canvas.addEventListener('pointerdown',e=>{
-  e.preventDefault(); canvas.setPointerCapture(e.pointerId);
+  e.preventDefault();
   const p=cellPos(e);
+  if(castleMode){ firstInteraction(); placeCastle(p[0],p[1]); return; }
+  canvas.setPointerCapture(e.pointerId);
   pointers.set(e.pointerId,newPointer(p[0],p[1]));
   firstInteraction();
 });
@@ -874,6 +928,7 @@ document.addEventListener('gesturestart',e=>e.preventDefault());
 document.addEventListener('touchmove',e=>{ if(e.target===canvas) e.preventDefault(); },{passive:false});
 
 document.querySelectorAll('#bar .tool').forEach(b=>b.addEventListener('click',()=>{
+  setCastleMode(false);
   tool=b.dataset.tool;
   document.querySelectorAll('#bar .tool').forEach(x=>{ x.classList.toggle('on',x===b); x.setAttribute('aria-pressed',x===b); });
   firstInteraction();
@@ -1099,6 +1154,145 @@ function haptics(level){
 }
 
 /* ------------------------------------------------------------------ */
+/* Sand castles: tap Castle, then tap the sand. The castle is packed   */
+/* from the tray's own sand (the area around it gets shallower) and    */
+/* stored as packed height in A.w, which FS_PACK lets crumble.         */
+/* ------------------------------------------------------------------ */
+let castleMode=false, castlesAny=false, lowSandShown=0, lowSandTimer=0;
+const btnCastle=$('#btnCastle');
+// castle half-width in cells: a modest share of the shorter screen side
+function castleR(){ return Math.min(120, Math.max(46, 0.15*Math.min(natW,natH)))/cs; }
+// Height of the classic castle at (u,v) (castle half-widths from its centre), in units of the resting depth.
+// rc = half-width in cells, used to keep crenellations at least ~2 cells wide.
+function castleProfile(u,v,rc){
+  const au=Math.abs(u), av=Math.abs(v), sq=Math.max(au,av);
+  const rsq=Math.pow(au**6+av**6,1/6);
+  let H=0;
+  // packed base mound, sloping out to the tray floor
+  if(rsq<1.0) H=1.2*Math.min(1,(1.0-rsq)/0.24);
+  // courtyard
+  if(sq<0.62) H=Math.max(H,1.5);
+  const per=Math.max(4.2/rc, 0.15);               // battlement period along the walls
+  const cren=(x)=>{ const f=((x/per)%1+1)%1; return f<0.5; }; // true = gap (crenel)
+  // curtain walls with a walkway and crenellated parapet; gate on the near side
+  if(sq>=0.56 && sq<=0.75){
+    const along = au>=av ? v : u;
+    let wh = sq>0.67 ? (cren(along+0.05)?1.85:2.25) : 1.95;
+    if(v>0 && av>=au && Math.abs(u)<0.13) wh=1.5;    // gateway
+    H=Math.max(H,wh);
+  }
+  // corner towers
+  for(const cx of [-0.72,0.72]) for(const cy of [-0.72,0.72]){
+    const d=Math.hypot(u-cx,v-cy);
+    if(d<0.26){
+      const a=Math.atan2(v-cy,u-cx); const nM=Math.max(5,Math.min(8,Math.round(2*Math.PI*0.21*rc/4.2)));
+      const gap=((a/(2*Math.PI)*nM)%1+1)%1<0.45;
+      H=Math.max(H, d>0.16 ? (gap?2.7:3.15) : 2.75);
+    }
+  }
+  // central keep with a crenellated rim and a pointed roof
+  const d=Math.hypot(u,v+0.04);
+  if(d<0.32){
+    const a=Math.atan2(v,u); const nM=Math.max(6,Math.min(10,Math.round(2*Math.PI*0.27*rc/4.2)));
+    const gap=((a/(2*Math.PI)*nM+0.25)%1+1)%1<0.45;
+    let kh = d>0.22 ? (gap?3.35:3.8) : 3.4;
+    if(d<0.15) kh=3.4+1.0*(1-d/0.15);
+    H=Math.max(H,kh);
+  }
+  return H;
+}
+let castleData=null; // last readback, reused for the follow-up "enough sand left?" estimate
+function looseTotal(d){ let m=0; const keep=cells.h0*0.08; for(let i=0;i<NX*NY;i++){ m+=Math.max(0,d[i*4]-Math.max(d[i*4+3],0)-keep); } return m; }
+// Volume a castle needs, ignoring the sand already in its footprint (an upper bound for the hint)
+function castleVolume(){
+  const rc=castleR(), n=Math.ceil(rc*1.05); let v=0;
+  for(let y=-n;y<=n;y++) for(let x=-n;x<=n;x++) v+=castleProfile(x/rc,y/rc,rc);
+  return v*cells.h0;
+}
+function buildCastle(cx,cy){
+  const rc=castleR(), n=Math.ceil(rc*1.05);
+  cx=Math.min(NX-2-n, Math.max(n+1, cx)); cy=Math.min(NY-2-n, Math.max(n+1, cy));
+  const d=readTex(fA[0]);
+  const h0=cells.h0, keep=h0*0.08;
+  // target column heights in the footprint
+  const fp=new Map(); let need=0;
+  const seed=Math.random()*100;
+  for(let y=-n;y<=n;y++) for(let x=-n;x<=n;x++){
+    const gx=Math.round(cx)+x, gy=Math.round(cy)+y; if(gx<0||gy<0||gx>=NX||gy>=NY) continue;
+    const u=(gx-cx)/rc, v=(gy-cy)/rc;
+    let Hc=castleProfile(u,v,rc); if(Hc<=0) continue;
+    // hand-made: tiny unevenness in the packed surface
+    Hc=(Hc+0.05*(Math.sin(gx*1.7+seed)*Math.cos(gy*1.3-seed)))*h0;
+    const i=(gy*NX+gx)*4, ho=d[i];
+    const hn=Math.max(Hc,ho);
+    fp.set(i,[hn,Math.max(Hc,d[i+3]||0)]); need+=hn-ho;
+  }
+  // gather that volume from the loose sand around it, nearest first
+  const avail=(R)=>{ let a=0; const r0=Math.max(0,Math.floor(cy-R)), r1=Math.min(NY-1,Math.ceil(cy+R)), c0=Math.max(0,Math.floor(cx-R)), c1=Math.min(NX-1,Math.ceil(cx+R));
+    for(let y=r0;y<=r1;y++) for(let x=c0;x<=c1;x++){ const i=(y*NX+x)*4; if(fp.has(i)) continue; const r=Math.hypot(x-cx,y-cy); if(r>R) continue;
+      a+=wgt(r,R)*Math.max(0,d[i]-Math.max(d[i+3],0)-keep); } return a; };
+  const wgt=(r,R)=>{ if(R>1e8) return 1; const t=Math.min(1,Math.max(0,(r-R*0.3)/(R*0.7))); return 0.5+0.5*Math.cos(Math.PI*t); }; // smooth fade to zero at the rim
+  let R=0, k=0;
+  for(const m of [1.7,2.3,3.0,4.0,5.5,8.0,1e9]){ const Rm=m*rc; const a=avail(Rm); if(a>0 && need/a<=(m>1e8?0.97:0.85)){ R=Rm; k=need/a; break; } }
+  if(!R) return {ok:false};
+  const r0=Math.max(0,Math.floor(cy-R)), r1=Math.min(NY-1,Math.ceil(cy+R)), c0=Math.max(0,Math.floor(cx-R)), c1=Math.min(NX-1,Math.ceil(cx+R));
+  for(let y=r0;y<=r1;y++) for(let x=c0;x<=c1;x++){ const i=(y*NX+x)*4; if(fp.has(i)) continue; const r=Math.hypot(x-cx,y-cy); if(r>R) continue;
+    const loose=Math.max(0,d[i]-Math.max(d[i+3],0)-keep); if(loose<=0) continue;
+    d[i]-=k*wgt(r,R)*loose; d[i+1]=0; d[i+2]=0; }
+  for(const [i,[hn,w]] of fp){ d[i]=hn; d[i+1]=0; d[i+2]=0; d[i+3]=w; }
+  gl.bindTexture(gl.TEXTURE_2D,A[0]); gl.texSubImage2D(gl.TEXTURE_2D,0,0,0,NX,NY,gl.RGBA,gl.FLOAT,d);
+  castlesAny=true; castleData=d;
+  // a puff of grains around the base
+  for(let k2=0;k2<160;k2++){ const a=Math.random()*6.283, r=rc*(0.85+Math.random()*0.35);
+    addPart(cx+Math.cos(a)*r, cy+Math.sin(a)*r, h0*(1.05+Math.random()*0.4), Math.cos(a)*(10+Math.random()*30), Math.sin(a)*(10+Math.random()*30), cells.G*0.006*Math.random(), 1); }
+  return {ok:true, need, left:looseTotal(d)};
+}
+function shakeWord(){ return isTouch ? 'Shake your phone' : 'Press Space to shake the tray'; }
+function placeCastle(x,y){
+  const r=buildCastle(x,y);
+  setCastleMode(false);
+  if(!r.ok){
+    clearTimeout(lowSandTimer);
+    toast(`Not enough loose sand for another castle. ${shakeWord()} to knock the castles down.`);
+    return false;
+  }
+  packSound(); try{ navigator.vibrate && navigator.vibrate([14,90,14,90,26]); }catch(e){}
+  // subtle heads-up when the next castle would not fit
+  if(r.left < r.need*1.25 && performance.now()-lowSandShown>20000){
+    lowSandShown=performance.now();
+    lowSandTimer=setTimeout(()=>toast(`Running low on sand. ${shakeWord()} to knock castles down and build again.`), 900);
+  }
+  return true;
+}
+function setCastleMode(on){
+  castleMode=on;
+  btnCastle.classList.toggle('on',on); btnCastle.setAttribute('aria-pressed',on);
+  canvas.style.cursor = on ? 'copy' : '';
+  if(on){ hint.textContent='Tap the sand where you want your castle'; hint.classList.remove('gone'); }
+  else if(hint.textContent.startsWith('Tap the sand')) hint.classList.add('gone');
+}
+btnCastle.addEventListener('click',()=>{ firstInteraction(); setCastleMode(!castleMode); });
+addEventListener('keydown',e=>{ if(e.key==='Escape') setCastleMode(false); });
+// Packing sound: three pats of a hand on damp sand (a low thump plus a short muffled crunch)
+let patBuf=null;
+function packSound(){
+  if(!audio||!soundOn) return;
+  const ctx=audio.ctx;
+  if(!patBuf){ const n=Math.floor(ctx.sampleRate*0.25); patBuf=ctx.createBuffer(1,n,ctx.sampleRate); const c=patBuf.getChannelData(0); for(let i=0;i<n;i++) c[i]=(Math.random()*2-1)*Math.exp(-i/(ctx.sampleRate*0.035)); }
+  const t0=ctx.currentTime+0.01;
+  [0,0.13,0.27].forEach((dt,j)=>{
+    const t=t0+dt, amp=j===2?1:0.7;
+    const src=ctx.createBufferSource(); src.buffer=patBuf; src.playbackRate.value=0.8+Math.random()*0.3;
+    const lp=ctx.createBiquadFilter(); lp.type='lowpass'; lp.frequency.value=900+Math.random()*300; lp.Q.value=0.7;
+    const g=ctx.createGain(); g.gain.setValueAtTime(0.0001,t); g.gain.exponentialRampToValueAtTime(0.9*amp,t+0.004); g.gain.exponentialRampToValueAtTime(0.0001,t+0.16);
+    src.connect(lp); lp.connect(g); g.connect(ctx.destination); src.start(t); src.stop(t+0.25);
+    const o=ctx.createOscillator(); o.type='sine'; o.frequency.setValueAtTime(120,t); o.frequency.exponentialRampToValueAtTime(55,t+0.09);
+    const og=ctx.createGain(); og.gain.setValueAtTime(0.0001,t); og.gain.exponentialRampToValueAtTime(0.55*amp,t+0.005); og.gain.exponentialRampToValueAtTime(0.0001,t+0.12);
+    o.connect(og); og.connect(ctx.destination); o.start(t); o.stop(t+0.15);
+  });
+}
+
+/* ------------------------------------------------------------------ */
 /* UI                                                                  */
 /* ------------------------------------------------------------------ */
 const hint=$('#hint'), toastEl=$('#toast');
@@ -1108,7 +1302,7 @@ let started=false, wakeLock=null;
 function firstInteraction(){
   if(soundOn) initAudio();
   if(started) return; started=true;
-  setTimeout(()=>hint.classList.add('gone'), 2500);
+  setTimeout(()=>{ if(!castleMode) hint.classList.add('gone'); }, 2500);
   try{ navigator.wakeLock && navigator.wakeLock.request('screen').then(w=>wakeLock=w).catch(()=>{}); }catch(e){}
 }
 let toastTimer=0;
@@ -1130,7 +1324,7 @@ $('#btnReset').addEventListener('click',()=>{
   const data=initialHeights(NX,NY,cs);
   gl.bindTexture(gl.TEXTURE_2D,A[0]); gl.texSubImage2D(gl.TEXTURE_2D,0,0,0,NX,NY,gl.RGBA,gl.FLOAT,data);
   gl.bindTexture(gl.TEXTURE_2D,B[0]); gl.texSubImage2D(gl.TEXTURE_2D,0,0,0,NX,NY,gl.RGBA,gl.FLOAT,new Float32Array(NX*NY*4));
-  np=0;
+  np=0; castlesAny=false; setCastleMode(false);
 });
 updateTiltBtn();
 if(isTouch && !(window.DeviceMotionEvent && typeof DeviceMotionEvent.requestPermission==='function')){ motion.asked=true; listenMotion(); }
@@ -1159,6 +1353,8 @@ window.__sand = {
   get state(){ return {gx,gy,gz,shake,simTime,flowLevel,fingerEnergy,np,Rf:Rf.slice()}; },
   setMotion(o){ Object.assign(motion,o); }, onOrient:e=>onOrient(e), onMotion:e=>onMotion(e), deviceReaction:()=>deviceReaction(),
   mapping(){ return {angle,R0,R1,ROFF,vw,vh,natW,natH}; },
+  castle(x,y){ return buildCastle(x,y); }, place(x,y){ return placeCastle(x,y); }, castleR:()=>castleR(), castleVolume:()=>castleVolume(),
+  setCastleMode:on=>setCastleMode(on), get castleMode(){ return castleMode; }, shake(t){ shakeT=t||0.6; },
 };
 
 setup(false);
@@ -1268,6 +1464,17 @@ function simFrame(dt){
     gl.uniform2i(u.uN,NX,NY); gl.uniform1i(u.uSegN,segN);
     gl.uniform4fv(u.uSegA,segA); gl.uniform4fv(u.uSegB,segB); gl.uniform4fv(u.uSegC,segC);
   });
+  // ---- castles: packed sand gives way to fingers, shaking and steep tilts ----
+  if(castlesAny){
+    const gl2=Math.hypot(gx,gy), tilt=Math.max(0, gl2/gz-0.9);
+    const down= gl2>1e-6 ? [gx/gl2, gy/gl2] : [0,0];
+    run(progs.pack, fA[1], u=>{
+      gl.uniform2i(u.uN,NX,NY); bindTex(progs.pack,'uA',0,A[0]); bindTex(progs.pack,'uTool',1,ToolT);
+      gl.uniform1f(u.uDt,dt); gl.uniform1f(u.uH0,cells.h0); gl.uniform1f(u.uShake,Math.max(0,shake-0.12)); gl.uniform1f(u.uTilt,tilt);
+      gl.uniform1f(u.uSeed,(simTime*3.7)%53.); gl.uniform2f(u.uDown,down[0],down[1]);
+    });
+    A.reverse(); fA.reverse();
+  }
 
   // ---- physics substeps ----
   // enough substeps that the CFL speed cap (0.5 cell/substep) stays >~150 cells/s on frame drops
