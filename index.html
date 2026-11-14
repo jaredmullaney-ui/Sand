@@ -620,7 +620,7 @@ void main(){
   o=vec4(off, b.zw);
 }`;
 
-/* Per-frame render prep: height + gradient (mipmapped for AO) */
+/* Per-frame render prep: height + gradient (read by the shadow / AO pass) */
 const FS_SURF = COMMON + `
 uniform sampler2D uA; uniform sampler2D uB; uniform float uTime, uH0;
 out vec4 o;
@@ -661,6 +661,11 @@ float objOcc(vec4 ob, float z, float k){
 const FS_LIGHT = COMMON + OBJOCC + `
 uniform sampler2D uS; uniform vec3 uL; uniform float uWall;
 out vec4 o;
+// mean sand height / item extent on a ring of 8 samples at radius r cells
+float ringS(vec2 p, float r){ vec2 sz=vec2(uN); float a=0.;
+  for(int k=0;k<8;k++){ float t=float(k)*0.7853982+r*0.37; a+=textureLod(uS,(p+r*vec2(cos(t),sin(t)))/sz,0.).x; } return a*0.125; }
+vec4 ringO(vec2 p, float r){ vec2 sz=vec2(uN); vec4 a=vec4(0.);
+  for(int k=0;k<8;k++){ float t=float(k)*0.7853982+r*0.37; a+=textureLod(uObj,(p+r*vec2(cos(t),sin(t)))/sz,0.); } return a*0.125; }
 void main(){
   vec2 p=gl_FragCoord.xy; vec2 sz=vec2(uN);
   float h0=texelFetch(uS,ivec2(p),0).x;
@@ -681,12 +686,16 @@ void main(){
       t += 0.45 + t*0.09;
     }
   }
-  vec2 uv=p/sz;
-  float b1=textureLod(uS,uv,1.).x, b2=textureLod(uS,uv,2.5).x, b3=textureLod(uS,uv,4.).x;
+  // multi-scale ambient occlusion: the average height of the surroundings at three scales. These are
+  // explicit samples rather than mipmap levels: on some phone GPUs the mipmaps of the half-float
+  // surface did not keep up with the sand, which left dark, flat smudges where sand had been moved.
+  float r1=ringS(p,1.), r3=ringS(p,3.), r6=ringS(p,6.), r10=ringS(p,10.);
+  float b1=0.5*(h0+r1), b2=(r1+2.*r3)/3., b3=(r3+r6+r10)/3.;
   float occ=(b1-h0)*0.16+(b2-h0)*0.10+(b3-h0)*0.05;
   if(uHasObj==1){
     // items standing on the sand darken the sand at their foot (contact AO) and shade it from the sky
-    vec4 o1=textureLod(uObj,uv,1.), o2=textureLod(uObj,uv,2.5), o3=textureLod(uObj,uv,4.);
+    vec4 q1=ringO(p,1.), q3=ringO(p,3.), q6=ringO(p,6.), q10=ringO(p,10.), q0=textureLod(uObj,p/sz,0.);
+    vec4 o1=0.5*(q0+q1), o2=(q1+2.*q3)/3., o3=(q3+q6+q10)/3.;
     occ += min(max(o1.w-h0,0.),4.)*0.13 + min(max(o2.w-h0,0.),6.)*0.07 + min(max(o3.w-h0,0.),8.)*0.03;
     occ += 0.22*clamp(max(o3.x-h0,0.)/30.,0.,1.);
   }
@@ -1569,10 +1578,10 @@ function allocSim(nx,ny,initData){
   B=[0,1].map(()=>tex(nx,ny,gl.RGBA32F,gl.RGBA,gl.FLOAT,NEAREST,gl.CLAMP_TO_EDGE,new Float32Array(nx*ny*4)));
   Kt=tex(nx,ny,gl.R32F,gl.RED,gl.FLOAT,NEAREST,gl.CLAMP_TO_EDGE);
   ToolT=tex(nx,ny,gl.RGBA32F,gl.RGBA,gl.FLOAT,NEAREST,gl.CLAMP_TO_EDGE);
-  SurfA=tex(nx,ny,gl.RGBA16F,gl.RGBA,gl.HALF_FLOAT,MIPLIN,gl.CLAMP_TO_EDGE);
+  SurfA=tex(nx,ny,gl.RGBA16F,gl.RGBA,gl.HALF_FLOAT,LINEAR,gl.CLAMP_TO_EDGE);
   SurfB=tex(nx,ny,gl.RGBA16F,gl.RGBA,gl.HALF_FLOAT,LINEAR,gl.CLAMP_TO_EDGE);
   RedT=tex(RED,RED,gl.RGBA32F,gl.RGBA,gl.FLOAT,NEAREST,gl.CLAMP_TO_EDGE);
-  ObjT=tex(nx,ny,gl.RGBA16F,gl.RGBA,gl.HALF_FLOAT,MIPLIN,gl.CLAMP_TO_EDGE);
+  ObjT=tex(nx,ny,gl.RGBA16F,gl.RGBA,gl.HALF_FLOAT,LINEAR,gl.CLAMP_TO_EDGE);
   WatT=tex(nx,ny,gl.RGBA32F,gl.RGBA,gl.FLOAT,NEAREST,gl.CLAMP_TO_EDGE);
   WD=[0,1].map(()=>tex(nx,ny,gl.RGBA32F,gl.RGBA,gl.FLOAT,NEAREST,gl.CLAMP_TO_EDGE,new Float32Array(nx*ny*4)));
   WF=[0,1].map(()=>tex(nx,ny,gl.RGBA32F,gl.RGBA,gl.FLOAT,NEAREST,gl.CLAMP_TO_EDGE,new Float32Array(nx*ny*4)));
@@ -2343,7 +2352,6 @@ function buildObj(){
     gl.bindVertexArray(vao); gl.drawArraysInstanced(gl.TRIANGLES,0,6,n);
     gl.blendEquation(gl.FUNC_ADD); gl.disable(gl.BLEND);
   }
-  gl.bindTexture(gl.TEXTURE_2D,ObjT); gl.generateMipmap(gl.TEXTURE_2D);
   return active;
 }
 function drawItems(L,px){
@@ -3494,7 +3502,6 @@ function frame(now){
 
   // ---- render prep ----
   run(progs.surf, fSurfA, u=>{ gl.uniform2i(u.uN,NX,NY); bindTex(progs.surf,'uA',0,A[0]); bindTex(progs.surf,'uB',1,B[0]); gl.uniform1f(u.uTime,simTime); gl.uniform1f(u.uH0,cells.h0); });
-  gl.bindTexture(gl.TEXTURE_2D,SurfA); gl.generateMipmap(gl.TEXTURE_2D);
   const objOn=buildObj();
   run(progs.light, fSurfB, u=>{ gl.uniform2i(u.uN,NX,NY); bindTex(progs.light,'uS',0,SurfA); gl.uniform3f(u.uL,L[0],L[1],L[2]); gl.uniform1f(u.uWall,0.0);
     bindTex(progs.light,'uObj',1,ObjT); gl.uniform1i(u.uHasObj,objOn?1:0); });
