@@ -1608,6 +1608,7 @@ document.addEventListener('touchmove',e=>{ if(e.target===canvas) e.preventDefaul
 
 document.querySelectorAll('#bar .tool').forEach(b=>b.addEventListener('click',()=>{
   setCastleMode(false); noteInteraction(); if(menuOpen) openMenu(false); if(ribbonOpen) openRibbon(false);
+  if(tool!==b.dataset.tool) analytics.track('tool_selected', {tool:b.dataset.tool, from:tool});
   tool=b.dataset.tool;
   document.querySelectorAll('#bar .tool').forEach(x=>{ x.classList.toggle('on',x===b); x.setAttribute('aria-pressed',x===b); });
   firstInteraction();
@@ -1991,7 +1992,7 @@ function packSound(){
 /* A/B variant are kept in localStorage so a device stays in one group. */
 /* ------------------------------------------------------------------ */
 const ANALYTICS = {
-  key: '',                              // PostHog project API key (starts with "phc_"); empty = analytics off
+  key: 'phc_yTtuRv2CZ3CkE5Gb5MgWEPRimuVM6FRxFgjWc7PtFJUa', // PostHog project API key (starts with "phc_"); empty = analytics off
   host: 'https://us.i.posthog.com',     // or https://eu.i.posthog.com for an EU project
 };
 const analytics = (() => {
@@ -3327,13 +3328,14 @@ function updateTiltBtn(){
   btnTilt.classList.toggle('attn', isTouch && !live && !motion.granted);
 }
 btnTilt.addEventListener('click',()=>{
+  analytics.track('tilt_tapped', {sensors: !!(motion.gotOrient||motion.gotMotion)});
   if(motion.gotOrient||motion.gotMotion){ showPad(padEl.hidden); return; }
   motion.asked=false; requestMotionPermission();
   if(!isTouch) toast('Tilt sensors are a phone feature. On a computer, use the arrow keys or the tilt pad.');
 });
-btnSound.addEventListener('click',()=>{ soundOn=!soundOn; btnSound.classList.toggle('on',soundOn); $('#sndWave').style.opacity=soundOn?1:0.15; if(soundOn) initAudio(); });
+btnSound.addEventListener('click',()=>{ soundOn=!soundOn; btnSound.classList.toggle('on',soundOn); $('#sndWave').style.opacity=soundOn?1:0.15; if(soundOn) initAudio(); analytics.track('sound_toggled', {on:soundOn}); });
 btnSound.classList.toggle('on',soundOn);
-$('#btnReset').addEventListener('click',()=>{ noteInteraction(); resetTray(); });
+$('#btnReset').addEventListener('click',()=>{ noteInteraction(); analytics.track('tray_reset', {}); resetTray(); });
 updateTiltBtn();
 if(isTouch && !(window.DeviceMotionEvent && typeof DeviceMotionEvent.requestPermission==='function')){ motion.asked=true; listenMotion(); }
 
