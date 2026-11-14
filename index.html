@@ -1256,7 +1256,7 @@ precision highp float; precision highp int; precision highp sampler2D;
 uniform vec4 uI0[24], uI1[24], uI2[24];
 uniform int uPass;              // 0 = screen, 1 = sim-resolution occlusion map, 2 = thumbnail
 uniform vec2 uR0, uR1, uROff, uScreen; uniform float uCs; uniform ivec2 uN;
-uniform sampler2D uS;           // sand surface (height in cells)
+uniform sampler2D uSV;          // sand surface (height in cells); its own name, so no uniform is shared with the fragment stage (strict mobile linkers)
 out vec2 vLocal; out vec2 vNat;
 flat out vec4 vI0; flat out vec4 vI1; flat out vec4 vI2; flat out float vBase;
 void main(){
@@ -1271,8 +1271,8 @@ void main(){
   if(uPass!=2){
     vec2 sz=vec2(uN);
     float r=I1.x*0.3/uCs; vec2 cc=I0.xy/uCs;
-    b=textureLod(uS,cc/sz,0.).x*2.+textureLod(uS,(cc+vec2(r,0))/sz,0.).x+textureLod(uS,(cc-vec2(r,0))/sz,0.).x
-     +textureLod(uS,(cc+vec2(0,r))/sz,0.).x+textureLod(uS,(cc-vec2(0,r))/sz,0.).x;
+    b=textureLod(uSV,cc/sz,0.).x*2.+textureLod(uSV,(cc+vec2(r,0))/sz,0.).x+textureLod(uSV,(cc-vec2(r,0))/sz,0.).x
+     +textureLod(uSV,(cc+vec2(0,r))/sz,0.).x+textureLod(uSV,(cc-vec2(0,r))/sz,0.).x;
     b=b/6.*uCs;
   }
   vBase=b;
@@ -2277,7 +2277,7 @@ function buildObj(){
     const pr=progs.obj; gl.useProgram(pr.p);
     setItemUniforms(pr,n);
     gl.uniform1i(pr.u.uPass,1); gl.uniform1f(pr.u.uCs,cs); gl.uniform2i(pr.u.uN,NX,NY); gl.uniform1f(pr.u.uWallMin,cells.h0*cs*0.25);
-    bindTex(pr,'uS',0,SurfA); bindTex(pr,'uT0',1,sprT0); bindTex(pr,'uT1',2,sprT1); bindTex(pr,'uT2',3,sprT2);
+    bindTex(pr,'uS',0,SurfA); gl.uniform1i(pr.u.uSV,0); bindTex(pr,'uT0',1,sprT0); bindTex(pr,'uT1',2,sprT1); bindTex(pr,'uT2',3,sprT2);
     gl.enable(gl.BLEND); gl.blendEquation(gl.MAX); gl.blendFunc(gl.ONE,gl.ONE);
     gl.bindVertexArray(vao); gl.drawArraysInstanced(gl.TRIANGLES,0,6,n);
     gl.blendEquation(gl.FUNC_ADD); gl.disable(gl.BLEND);
@@ -2295,7 +2295,7 @@ function drawItems(L,px){
   gl.uniform2f(u.uScreen,vw,vh); gl.uniform1f(u.uCs,cs); gl.uniform2i(u.uN,NX,NY); gl.uniform2f(u.uCanvas,canvas.width,canvas.height);
   gl.uniform3f(u.uL,L[0],L[1],L[2]); gl.uniform3fv(u.uSun,LOOK.sun); gl.uniform3fv(u.uSky,LOOK.sky); gl.uniform1f(u.uExposure,LOOK.exposure); gl.uniform1f(u.uTime,simTime);
   gl.uniform1i(u.uHasObj,1);
-  bindTex(pr,'uS',0,SurfA); bindTex(pr,'uT0',1,sprT0); bindTex(pr,'uT1',2,sprT1); bindTex(pr,'uT2',3,sprT2); bindTex(pr,'uObj',4,ObjT);
+  bindTex(pr,'uS',0,SurfA); gl.uniform1i(pr.u.uSV,0); bindTex(pr,'uT0',1,sprT0); bindTex(pr,'uT1',2,sprT1); bindTex(pr,'uT2',3,sprT2); bindTex(pr,'uObj',4,ObjT);
   gl.enable(gl.BLEND); gl.blendFuncSeparate(gl.SRC_ALPHA,gl.ONE_MINUS_SRC_ALPHA,gl.ONE,gl.ONE_MINUS_SRC_ALPHA);
   gl.bindVertexArray(vao); gl.drawArraysInstanced(gl.TRIANGLES,0,6,n);
   gl.disable(gl.BLEND);
@@ -2316,7 +2316,7 @@ function renderThumbs(){
     gl.uniform1i(u.uPass,2); gl.uniform1f(u.uCs,1); gl.uniform2i(u.uN,1,1);
     gl.uniform3f(u.uL,L[0],L[1],L[2]); gl.uniform3fv(u.uSun,LOOK.sun); gl.uniform3fv(u.uSky,LOOK.sky); gl.uniform1f(u.uExposure,LOOK.exposure*1.15); gl.uniform1f(u.uTime,0);
     gl.uniform1i(u.uHasObj,0);
-    bindTex(pr,'uS',0,SurfA); bindTex(pr,'uT0',1,sprT0); bindTex(pr,'uT1',2,sprT1); bindTex(pr,'uT2',3,sprT2); bindTex(pr,'uObj',4,ObjT);
+    bindTex(pr,'uS',0,SurfA); gl.uniform1i(pr.u.uSV,0); bindTex(pr,'uT0',1,sprT0); bindTex(pr,'uT1',2,sprT1); bindTex(pr,'uT2',3,sprT2); bindTex(pr,'uObj',4,ObjT);
     gl.bindVertexArray(vao); gl.drawArraysInstanced(gl.TRIANGLES,0,6,1);
     gl.readPixels(0,0,S,S,gl.RGBA,gl.UNSIGNED_BYTE,buf);
     const cv=document.querySelector(`.gitem[data-kind="${name}"] canvas`); if(!cv) continue;
