@@ -927,7 +927,7 @@ void main(){
 
 /* Airborne grains (pour stream, flicks) drawn as lit points with cast shadows */
 const VS_PART = `#version 300 es
-precision highp float;
+precision highp float; precision highp int; precision highp sampler2D;
 layout(location=0) in vec4 aP; // nat x,y (cells), z (cells above floor), seed
 uniform vec2 uR0, uR1, uROff; uniform vec2 uScreen; uniform float uCs, uPx; uniform vec3 uL; uniform float uShadow;
 out float vSeed; out float vZ;
@@ -971,7 +971,7 @@ void main(){
 }`;
 /* Flags: small lit triangles built on the CPU each frame (screen css px, linear colour; alpha<0 = shadow) */
 const VS_FLAG = `#version 300 es
-precision highp float;
+precision highp float; precision highp int; precision highp sampler2D;
 layout(location=0) in vec2 aP; layout(location=1) in vec4 aC;
 uniform vec2 uScreen; out vec4 vC;
 void main(){ gl_Position=vec4(aP.x/uScreen.x*2.-1., 1.-aP.y/uScreen.y*2., 0., 1.); vC=aC; }`;
@@ -1252,7 +1252,7 @@ void main(){
 /* Items, drawn as instanced quads. Per instance: I0 = centre (natural css px), cos, sin of rotation;
    I1 = half size (px), atlas slot (x,y), lift (px);  I2 = opacity, wall on/off, height scale, mode */
 const VS_ITEM = `#version 300 es
-precision highp float;
+precision highp float; precision highp int; precision highp sampler2D;
 uniform vec4 uI0[24], uI1[24], uI2[24];
 uniform int uPass;              // 0 = screen, 1 = sim-resolution occlusion map, 2 = thumbnail
 uniform vec2 uR0, uR1, uROff, uScreen; uniform float uCs; uniform ivec2 uN;
