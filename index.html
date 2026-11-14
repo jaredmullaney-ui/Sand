@@ -39,6 +39,7 @@ body{overscroll-behavior:none;touch-action:none;-webkit-user-select:none;user-se
 @media (max-width:340px){#bar button{width:32px;font-size:8px}}
 #hint{position:fixed;left:50%;top:calc(18px + env(safe-area-inset-top,0px));transform:translateX(-50%);padding:9px 16px;border-radius:999px;background:var(--glass);-webkit-backdrop-filter:blur(14px);backdrop-filter:blur(14px);border:1px solid var(--line);font:500 13px/1.35 var(--font);color:var(--ink);text-align:center;white-space:nowrap;pointer-events:none;transition:opacity .9s;max-width:calc(100vw - 32px);white-space:normal;width:max-content;}
 #hint.gone{opacity:0;}
+body.mode-zen #hint,body.mode-castle #hint{max-width:calc(100vw - 132px);}
 #toast{position:fixed;left:50%;top:calc(64px + env(safe-area-inset-top,0px));transform:translateX(-50%);padding:8px 14px;border-radius:12px;background:var(--glass-hi);border:1px solid var(--line);font:500 12.5px/1.35 var(--font);max-width:min(340px,calc(100vw - 32px));text-align:center;pointer-events:none;opacity:0;transition:opacity .5s;}
 #toast.show{opacity:1;}
 #pad{position:fixed;right:calc(16px + env(safe-area-inset-right,0px));bottom:calc(84px + env(safe-area-inset-bottom,0px));width:104px;height:104px;border-radius:50%;background:var(--glass);-webkit-backdrop-filter:blur(14px);backdrop-filter:blur(14px);border:1px solid var(--line);touch-action:none;cursor:grab;}
@@ -74,10 +75,60 @@ body{overscroll-behavior:none;touch-action:none;-webkit-user-select:none;user-se
 #undo.show{opacity:1;transform:translate(-50%,0);}
 #undo button{appearance:none;border:0;background:rgba(240,200,140,.2);color:var(--accent);font:700 13px/1 var(--font);padding:9px 14px;border-radius:999px;cursor:pointer;display:flex;align-items:center;gap:6px;touch-action:manipulation;}
 @media (prefers-reduced-motion:reduce){#bar button.attn{animation:none}#garden,#undo{transition:none}}
+/* Modes: Zen Garden shows the Garden button; Castle Builder swaps it for the piece ribbon */
+body.mode-castle #btnGarden{display:none;}
+#ghost{position:fixed;left:0;top:0;width:100%;height:100%;pointer-events:none;}
+#btnHome{position:fixed;z-index:4;left:calc(12px + env(safe-area-inset-left,0px));top:calc(14px + env(safe-area-inset-top,0px));width:40px;height:40px;border-radius:50%;appearance:none;border:1px solid var(--line);background:var(--glass);-webkit-backdrop-filter:blur(14px);backdrop-filter:blur(14px);color:var(--ink-dim);display:flex;align-items:center;justify-content:center;cursor:pointer;touch-action:manipulation;padding:0;transition:color .2s,background .2s;}
+#btnHome:hover,#btnHome:focus-visible{color:var(--ink);background:var(--glass-hi);outline:none;}
+#btnHome svg{width:19px;height:19px;stroke:currentColor;fill:none;stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round;}
+#btnHome[hidden]{display:none;}
+/* Castle piece ribbon: a glass strip above the tool bar */
+#ribbon{position:fixed;z-index:5;left:50%;bottom:calc(80px + env(safe-area-inset-bottom,0px));transform:translate(-50%,10px);width:min(600px,calc(100vw - 16px));box-sizing:border-box;padding:8px 8px 8px;border-radius:22px;background:var(--glass-hi);-webkit-backdrop-filter:blur(22px) saturate(1.3);backdrop-filter:blur(22px) saturate(1.3);border:1px solid var(--line);box-shadow:0 14px 40px rgba(0,0,0,.4);opacity:0;transition:opacity .18s,transform .18s;}
+#ribbon.open{opacity:1;transform:translate(-50%,0);}
+#ribbon[hidden]{display:none;}
+#ribbon.placing{opacity:.25;pointer-events:none;}
+#ribbon .rcap{margin:1px 6px 7px;font:500 12px/1.3 var(--font);color:var(--ink-dim);text-align:center;min-height:16px;}
+#ribbon .rrow{display:flex;align-items:stretch;gap:6px;}
+#ribbon .rscroll{flex:1;min-width:0;display:flex;gap:5px;overflow-x:auto;scrollbar-width:none;-webkit-overflow-scrolling:touch;scroll-snap-type:x proximity;touch-action:pan-x;-webkit-mask-image:linear-gradient(90deg,#000 calc(100% - 18px),transparent);mask-image:linear-gradient(90deg,#000 calc(100% - 18px),transparent);padding-right:14px;}
+#ribbon .rscroll::-webkit-scrollbar{display:none;}
+.ptile{flex:0 0 auto;appearance:none;border:1px solid transparent;background:rgba(255,240,220,.07);border-radius:14px;width:62px;padding:5px 2px 6px;display:flex;flex-direction:column;align-items:center;gap:3px;color:var(--ink);font:600 10.5px/1.1 var(--font);cursor:pointer;touch-action:pan-x;scroll-snap-align:start;transition:background .15s,border-color .15s;}
+.ptile canvas{width:46px;height:46px;pointer-events:none;}
+.ptile span{pointer-events:none;}
+.ptile:hover,.ptile:focus-visible{background:rgba(255,240,220,.13);outline:none;}
+.ptile.on{background:rgba(240,200,140,.22);border-color:rgba(240,200,140,.55);color:var(--accent);}
+#rUndo{flex:0 0 auto;appearance:none;border:0;border-left:1px solid var(--line);background:transparent;color:var(--ink-dim);width:54px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:5px;font:600 10.5px/1 var(--font);cursor:pointer;touch-action:manipulation;padding:0 0 0 4px;}
+#rUndo svg{width:20px;height:20px;stroke:currentColor;fill:none;stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round;}
+#rUndo:not(:disabled):hover,#rUndo:focus-visible{color:var(--ink);outline:none;}
+#rUndo:disabled{opacity:.35;cursor:default;}
+@media (max-width:400px){.ptile{width:56px}.ptile canvas{width:42px;height:42px}#rUndo{width:46px}}
+body.ribbon #pad{bottom:calc(196px + env(safe-area-inset-bottom,0px));}
+/* Start screen: choose a mode */
+#modes{position:fixed;inset:0;z-index:20;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:18px;padding:calc(24px + env(safe-area-inset-top,0px)) 16px calc(24px + env(safe-area-inset-bottom,0px));box-sizing:border-box;background:radial-gradient(ellipse at 50% 40%,rgba(26,22,18,.35),rgba(20,16,12,.72));-webkit-backdrop-filter:blur(6px);backdrop-filter:blur(6px);opacity:1;transition:opacity .35s;overflow-y:auto;}
+#modes.gone{opacity:0;pointer-events:none;}
+#modes[hidden]{display:none;}
+#modes h1{margin:0;font:700 30px/1.1 var(--font);letter-spacing:.01em;color:var(--ink);text-shadow:0 2px 14px rgba(0,0,0,.45);}
+#modes .msub{margin:-8px 0 4px;font:500 14px/1.4 var(--font);color:var(--ink-dim);text-align:center;}
+#modes .mcards{display:flex;gap:14px;flex-wrap:wrap;justify-content:center;width:100%;max-width:640px;}
+.mcard{appearance:none;flex:1 1 260px;max-width:300px;display:flex;flex-direction:column;align-items:stretch;text-align:left;padding:0;border-radius:22px;overflow:hidden;border:1px solid var(--line);background:var(--glass-hi);-webkit-backdrop-filter:blur(20px) saturate(1.3);backdrop-filter:blur(20px) saturate(1.3);color:var(--ink);cursor:pointer;touch-action:manipulation;box-shadow:0 14px 40px rgba(0,0,0,.4);transition:transform .15s,border-color .15s;}
+.mcard:hover,.mcard:focus-visible{transform:translateY(-2px);border-color:rgba(240,200,140,.55);outline:none;}
+.mcard:active{transform:scale(.985);}
+.mcard canvas{display:block;width:100%;height:150px;}
+.mcard .mbody{padding:13px 16px 16px;display:flex;flex-direction:column;gap:5px;}
+.mcard b{font:700 17px/1.2 var(--font);display:flex;align-items:center;gap:8px;}
+.mcard b i{font:600 10px/1 var(--font);font-style:normal;letter-spacing:.05em;text-transform:uppercase;color:var(--accent);background:rgba(240,200,140,.16);padding:4px 7px;border-radius:999px;}
+.mcard b i[hidden]{display:none;}
+.mcard span{font:500 13px/1.4 var(--font);color:var(--ink-dim);}
+#modes .mnote{font:500 12px/1.4 var(--font);color:var(--ink-dim);text-align:center;margin:0;min-height:17px;}
+#mClose{appearance:none;border:1px solid var(--line);background:transparent;color:var(--ink);font:600 13px/1 var(--font);padding:10px 16px;border-radius:999px;cursor:pointer;touch-action:manipulation;}
+#mClose[hidden]{display:none;}
+@media (max-height:620px){.mcard canvas{height:96px}#modes h1{font-size:24px}#modes{gap:12px}}
+@media (prefers-reduced-motion:reduce){#ribbon,#modes{transition:none}}
 </style>
 </head>
 <body>
 <canvas id="sand" aria-label="Sand tray. Draw with your finger, tilt the device to move the sand."></canvas>
+<canvas id="ghost" aria-hidden="true"></canvas>
+<button id="btnHome" hidden title="Choose a mode" aria-label="Choose a mode"><svg viewBox="0 0 24 24"><rect x="4" y="4" width="6.5" height="6.5" rx="1.6"/><rect x="13.5" y="4" width="6.5" height="6.5" rx="1.6"/><rect x="4" y="13.5" width="6.5" height="6.5" rx="1.6"/><rect x="13.5" y="13.5" width="6.5" height="6.5" rx="1.6"/></svg></button>
 <div id="hint">Draw with your finger. Tilt or shake your phone.</div>
 <div id="toast" role="status"></div>
 <div id="pad" hidden aria-label="Tilt pad"><div id="puck"></div><span>Tilt</span></div>
@@ -114,6 +165,23 @@ body{overscroll-behavior:none;touch-action:none;-webkit-user-select:none;user-se
     <button id="gClear"><svg viewBox="0 0 24 24"><path d="M4 7h16M9 7V4.5h6V7M6.5 7l1 13h9l1-13"/></svg><span>Clear items</span></button>
     <div id="gConfirm" hidden><span>Remove all items?</span><button id="gNo">Cancel</button><button id="gYes">Remove</button></div>
   </div>
+</div>
+<div id="ribbon" role="toolbar" aria-label="Castle pieces" hidden>
+  <p class="rcap" id="rCap">Pick a piece, then touch the sand</p>
+  <div class="rrow">
+    <div class="rscroll" id="rTiles"></div>
+    <button id="rUndo" disabled title="Undo the last piece"><svg viewBox="0 0 24 24"><path d="M9 14L4 9l5-5"/><path d="M4 9h10a6 6 0 0 1 0 12h-3"/></svg>Undo</button>
+  </div>
+</div>
+<div id="modes" role="dialog" aria-modal="true" aria-labelledby="mTitle" hidden>
+  <h1 id="mTitle">Sandtray</h1>
+  <p class="msub">How do you want to play?</p>
+  <div class="mcards">
+    <button class="mcard" data-mode="zen"><canvas width="1" height="1"></canvas><div class="mbody"><b>Zen Garden <i hidden>Playing</i></b><span>Rake calm patterns and arrange stones, moss, a lantern and a cherry tree.</span></div></button>
+    <button class="mcard" data-mode="castle"><canvas width="1" height="1"></canvas><div class="mbody"><b>Castle Builder <i hidden>Playing</i></b><span>Build towers, long walls and new levels from the tray's own sand. Add flags and a moat.</span></div></button>
+  </div>
+  <p class="mnote" id="mNote"></p>
+  <button id="mClose" hidden>Back to my tray</button>
 </div>
 <div id="undo" role="status" hidden><span>Cleared</span><button><svg viewBox="0 0 24 24"><path d="M9 14L4 9l5-5"/><path d="M4 9h10a6 6 0 0 1 0 12h-3"/></svg>Undo</button></div>
 <script>
@@ -154,6 +222,7 @@ const P = {
   damp: 1.2,
   grainTear: 0.45,      // reshuffle grain offsets when neighbours are squeezed to < this many cells apart
   layerPx: 6,           // thickness of the flowing surface layer
+  moatRPx: 15,          // half-width of a moat channel
   lightElev: 36,        // degrees
 };
 
@@ -414,15 +483,20 @@ void main(){
 const FS_PACK = COMMON + `
 uniform sampler2D uA; uniform sampler2D uTool;
 uniform float uDt, uH0, uShake, uTilt, uSeed; uniform vec2 uDown;
+uniform sampler2D uW; uniform int uHasW; uniform float uTime, uRemnant;
 out vec4 o;
 float W(ivec2 p){ return min(texelFetch(uA,cl(p),0).w, texelFetch(uA,cl(p),0).x); }
 float Hh(ivec2 p){ return texelFetch(uA,cl(p),0).x; }
 void main(){
   ivec2 p=ivec2(gl_FragCoord.xy);
   vec4 s=texelFetch(uA,p,0);
+  vec4 t=texelFetch(uTool,p,0);
+  // moat banks are dug in damp sand: they keep the shape they were dug in, and the water keeps them wet
+  vec2 wm = uHasW==1 ? texelFetch(uW,p,0).xy : vec2(0.,1e9);
+  bool wetZ = wm.x>0.3;
+  if(wetZ && t.x>=5e3 && (wm.y>1e8 || uTime-wm.y<1.0)){ o=vec4(s.xyz,s.x); return; }
   float w=min(s.w,s.x);
   if(w<=1e-4){ o=vec4(s.xyz,0.); return; }
-  vec4 t=texelFetch(uTool,p,0);
   if(t.x<5e3 && t.x<w) w=0.;                   // a finger or rake through the castle breaks the whole column
   w -= t.w*uDt*uH0*5.;                          // the smoothing hand levels it
   // support: packed sand needs at least two packed neighbours of comparable height,
@@ -438,11 +512,12 @@ void main(){
   if(sup<2) rate+=3.*(0.5+nz);
   // a low packed remnant is no longer part of a castle (an intact castle's base is >=1.2 deep):
   // let it fall apart instead of staying behind as a hard, dark slab
-  if(w<0.9*uH0) rate+=2.*(0.5+nz);
   // shaking and steep tilts: faces exposed on the downhill side give way first, in clumps
   ivec2 dn=ivec2(round(uDown));
   float drop=clamp((w-Hh(p+dn))/uH0,0.,3.);
-  float load=uShake*5.+uTilt*2.5;
+  float load=(uShake*5.+uTilt*2.5)*(wetZ?0.35:1.);
+  // (in Castle Builder, low pieces such as the bottom step of a stair are legitimate, so remnants only go while the tray is disturbed)
+  if(w<0.9*uH0 && !wetZ) rate+=2.*(0.5+nz)*max(uRemnant, min(1.,load*4.));
   rate+=load*(0.3+0.6*drop+0.6*nzS)*(0.5+nz);
   w-=rate*uH0*uDt;
   o=vec4(s.xyz,max(w,0.));
@@ -491,9 +566,19 @@ void main(){
 
 /* Per-frame render prep: height + gradient (mipmapped for AO) */
 const FS_SURF = COMMON + `
-uniform sampler2D uA;
+uniform sampler2D uA; uniform sampler2D uB; uniform float uTime, uH0;
 out vec4 o;
-float H(ivec2 p){ return texelFetch(uA,cl(p),0).x; }
+// Castle pieces that lose their support: B.z is how far the column still has to drop (cells), B.w when the
+// drop starts. z>0: the chunk breaks off and falls under gravity; z<0: the slab bends down (sags), slower.
+float lift(ivec2 p){
+  vec2 b=texelFetch(uB,cl(p),0).zw;
+  if(b.x==0.) return 0.;
+  float t=uTime-b.y;
+  if(t<=0.) return abs(b.x);
+  if(b.x>0.){ float T=0.08+0.16*sqrt(b.x/uH0); float f=t/T; return f>=1. ? 0. : b.x*(1.-f*f); }
+  float f=t/0.7; return f>=1. ? 0. : -b.x*(1.-f*f*(3.-2.*f));
+}
+float H(ivec2 p){ return texelFetch(uA,cl(p),0).x+lift(p); }
 void main(){
   ivec2 p=ivec2(gl_FragCoord.xy);
   vec4 s=texelFetch(uA,p,0);
@@ -501,7 +586,10 @@ void main(){
   float gy=0.5*(H(p+ivec2(0,1))-H(p-ivec2(0,1)));
   // w: how much of the visible surface is packed castle sand (a thin loose dusting still counts)
   float pk = s.w>0.01 ? 1.-smoothstep(0.15,0.9,s.x-s.w) : 0.;
-  o=vec4(s.x,gx,gy,pk);
+  // a sagging slab is still packed sand; a falling chunk is breaking up
+  vec2 bz=texelFetch(uB,p,0).zw; float lf=lift(p);
+  if(lf>0. && bz.x>0.) pk*=0.6;
+  o=vec4(s.x+lf,gx,gy,pk);
 }`;
 
 /* Garden-item occlusion. uObj texel: x = top of the item's topmost solid span, y = -(its bottom),
@@ -655,6 +743,8 @@ uniform float uGS;       // grain texture px per css px
 uniform float uGT;       // grain texture size
 uniform vec3 uL, uSun, uSky;
 uniform float uTime, uExposure;
+// moat water. uW texel: x = moat mask, y = time the water reaches this cell, zw = centre of its body of water
+uniform sampler2D uW; uniform int uHasW; uniform float uWl, uWRip, uH0c; uniform vec2 uWS;
 out vec4 o;
 vec4 cubicW(float v){ vec4 n=vec4(1.,2.,3.,4.)-v; vec4 s=n*n*n; float x=s.x; float y=s.y-4.*s.x; float z=s.z-4.*s.y+6.*s.x; float w=6.-x-y-z; return vec4(x,y,z,w)*(1./6.); }
 vec4 bicubic(sampler2D t, vec2 tc, vec2 size){
@@ -777,6 +867,56 @@ void main(){
     floorL+=uSun*0.004*(0.6+0.4*m1)*sh*(1.-dust);
     col=mix(floorL, col, cov);
   }
+  if(uHasW==1){
+    // ---- moat water: a silty, see-through layer over wet sand, with live ripples and lamp glints ----
+    vec2 c2=tc-0.5; ivec2 j0=ivec2(floor(c2)); vec2 fj=c2-vec2(j0);
+    vec4 w00=texelFetch(uW,clamp(j0,ivec2(0),uN-ivec2(1)),0), w10=texelFetch(uW,clamp(j0+ivec2(1,0),ivec2(0),uN-ivec2(1)),0);
+    vec4 w01=texelFetch(uW,clamp(j0+ivec2(0,1),ivec2(0),uN-ivec2(1)),0), w11=texelFetch(uW,clamp(j0+ivec2(1,1),ivec2(0),uN-ivec2(1)),0);
+    float m=mix(mix(w00.x,w10.x,fj.x), mix(w01.x,w11.x,fj.x), fj.y);
+    if(m>0.002){
+      // water arrives along the channel: each corner fills over a moment once the front reaches it
+      float f00=w00.x*clamp((uTime-w00.y)/0.35,0.,1.), f10=w10.x*clamp((uTime-w10.y)/0.35,0.,1.);
+      float f01=w01.x*clamp((uTime-w01.y)/0.35,0.,1.), f11=w11.x*clamp((uTime-w11.y)/0.35,0.,1.);
+      float fill=mix(mix(f00,f10,fj.x), mix(f01,f11,fj.x), fj.y);
+      #define FRONT(W) ((W).x*step(0.,uTime-(W).y)*(1.-smoothstep(0.2,0.7,uTime-(W).y)))
+      float front=max(max(FRONT(w00),FRONT(w10)),max(FRONT(w01),FRONT(w11)));
+      vec4 wn=w00; if(w10.x>wn.x) wn=w10; if(w01.x>wn.x) wn=w01; if(w11.x>wn.x) wn=w11;
+      // ripples: two drifting wave fields, stronger when the tray is shaken or sloshing
+      vec2 q=nat*0.11; float t=uTime;
+      float e=0.6;
+      #define RIP(P) (vnoise((P)+vec2(t*0.55,t*0.31))+0.7*vnoise((P)*1.7-vec2(t*0.42,-t*0.63)+9.1)+0.35*vnoise((P)*3.3+vec2(-t*0.9,t*0.7)+3.7))
+      float r0=RIP(q), rx=RIP(q+vec2(e,0.)), ry=RIP(q+vec2(0.,e));
+      vec2 rg=vec2(rx-r0, ry-r0)/e*uWRip;
+      float wsurf=uWl+dot(uWS, tc-wn.zw)+(r0-1.)*0.04*uWRip;
+      float depth=(wsurf-h)*clamp(fill*1.15,0.,1.);       // cells of water above the sand
+      float a=smoothstep(0.0,0.22,depth)*smoothstep(0.05,0.5,m);
+      // wet sand: under the water and in a band up the moat's banks
+      float wet=clamp(fill*1.4,0.,1.)*smoothstep(0.05,0.6,m)*(1.-smoothstep(0.,1.1*uH0c,-depth));
+      wet=max(wet,a);
+      col*=mix(vec3(1.), vec3(0.56,0.55,0.56), wet);
+      if(a>0.){
+        float dpx=max(depth,0.)*uCs;
+        vec3 Tr=exp(-vec3(0.075,0.040,0.034)*dpx);
+        // light focused by the ripples onto the bottom (caustics)
+        float ca=vnoise(nat*0.21+rg*5.+vec2(t*0.8,-t*0.5)); ca=pow(ca,3.)*2.2;
+        vec3 bottom=col*(1.+ca*clamp(dpx/7.,0.,1.)*sh*0.9);
+        // silt in the water scatters light back up: it reads as murky blue-green even in the shade of the banks
+        vec3 ins=vec3(0.060,0.150,0.165)*(uSun*max(L.z,0.)*mix(0.55,0.7,sh)+uSky*3.2);
+        vec3 wcol=bottom*Tr+ins*(1.-Tr);
+        vec3 Nw=normalize(vec3(-rg*0.55-uWS*0.3, 1.));
+        vec3 Rv=reflect(vec3(0.,0.,-1.),Nw);
+        float F=0.035+0.965*pow(1.-Nw.z,5.)+0.05*smoothstep(0.9,1.6,r0);
+        // reflection of the room: dim walls, and the warm lamp low on one side
+        vec3 env=uSky*(1.6+1.2*Rv.z)+uSun*0.5*pow(max(dot(Rv,L),0.),6.);
+        vec3 Hv=normalize(L+vec3(0.,0.,1.));
+        float spec=pow(max(dot(Nw,Hv),0.),600.)*5.+pow(max(dot(Nw,Hv),0.),40.)*0.05;
+        // the meniscus along the banks and the advancing front catch the light
+        float shore=(1.-smoothstep(0.,0.5,depth))*0.55+front*0.5;
+        wcol+=env*F+uSky*0.10*shore+uSun*sh*(spec+0.03*shore*(0.5+ca));
+        col=mix(col, wcol, a);
+      }
+    }
+  }
   // gentle falloff of the lamp across the tray
   vec2 vq=gl_FragCoord.xy/uCanvas-0.5;
   col*=1.-0.22*dot(vq,vq);
@@ -817,6 +957,31 @@ void main(){
   vec3 col=alb*(uSun*max(dot(n,vec3(L.x,-L.y,L.z)),0.)+uSky*(0.6+0.4*n.z));
   col=srgb(aces(col*uExposure));
   o=vec4(col, 1.-smoothstep(0.6,1.,r));
+}`;
+
+/* Castle Builder: sand heights under each flag (read back a few times a second) */
+const FS_PROBE = COMMON + `
+uniform sampler2D uA; uniform vec2 uPts[32];
+out vec4 o;
+void main(){
+  int i=int(gl_FragCoord.x); vec2 q=uPts[i]; ivec2 c=ivec2(floor(q));
+  vec4 s0=texelFetch(uA,cl(c),0); float hm=0.;
+  for(int y=-1;y<=1;y++) for(int x=-1;x<=1;x++) hm=max(hm, texelFetch(uA,cl(c+ivec2(x,y)),0).x);
+  o=vec4(s0.x, hm, min(s0.w,s0.x), 1.);
+}`;
+/* Flags: small lit triangles built on the CPU each frame (screen css px, linear colour; alpha<0 = shadow) */
+const VS_FLAG = `#version 300 es
+precision highp float;
+layout(location=0) in vec2 aP; layout(location=1) in vec4 aC;
+uniform vec2 uScreen; out vec4 vC;
+void main(){ gl_Position=vec4(aP.x/uScreen.x*2.-1., 1.-aP.y/uScreen.y*2., 0., 1.); vC=aC; }`;
+const FS_FLAG = HDR + `
+in vec4 vC; uniform float uExposure; out vec4 o;
+vec3 aces(vec3 x){ return clamp((x*(2.51*x+0.03))/(x*(2.43*x+0.59)+0.14),0.,1.); }
+vec3 srgb(vec3 c){ return mix(c*12.92, 1.055*pow(c,vec3(1./2.4))-0.055, step(vec3(0.0031308),c)); }
+void main(){
+  if(vC.a<0.){ o=vec4(0.,0.,0.,-vC.a); return; }
+  o=vec4(srgb(aces(vC.rgb*uExposure)), vC.a);
 }`;
 
 /* ------------------------------------------------------------------ */
@@ -1254,6 +1419,7 @@ try{
     grain:program(FS_GRAIN), grainN:program(FS_GRAINN), final:program(FS_FINAL),
     part:program(FS_PART, VS_PART), pack:program(FS_PACK),
     sprite:program(FS_SPRITE), obj:program(FS_OBJ, VS_ITEM), item:program(FS_ITEM, VS_ITEM),
+    probe:program(FS_PROBE), flag:program(FS_FLAG, VS_FLAG),
   };
 }catch(e){ fail('The sand simulation failed to start on this device: '+e.message); return; }
 
@@ -1288,7 +1454,7 @@ const LOOK = {
 /* Simulation state                                                    */
 /* ------------------------------------------------------------------ */
 let NX=0, NY=0, cs=3, vw=0, vh=0, angle=0, natW=0, natH=0;
-let A=[], B=[], Kt, ToolT, SurfA, SurfB, RedT, ObjT;
+let A=[], B=[], Kt, ToolT, SurfA, SurfB, RedT, ObjT, WatT;
 let fA=[], fB=[], fK, fTool, fSurfA, fSurfB, fRed, fObj;
 let cells = {}; // tunables in cells
 const RED=16;
@@ -1318,7 +1484,7 @@ function initialHeights(nx,ny,c){
   // with a flat hand) down to fine grain-scale roughness.
   // Lengths in css px; slopes stay well below the angle of repose so nothing moves at rest.
   const data=new Float32Array(nx*ny*4);
-  const h0=P.depthPx/c;
+  const h0=P.depthPx*trayDepth()/c;
   const rnd=mulberry((Math.random()*4294967296)>>>0);
   const lat=new Float32Array(256); for(let i=0;i<256;i++) lat[i]=rnd()*2-1;
   const perm=new Uint8Array(512); for(let i=0;i<256;i++) perm[i]=i;
@@ -1341,7 +1507,7 @@ function initialHeights(nx,ny,c){
 function mulberry(a){ return ()=>{ a|=0; a=a+0x6D2B79F5|0; let t=Math.imul(a^a>>>15,1|a); t=t+Math.imul(t^t>>>7,61|t)^t; return ((t^t>>>14)>>>0)/4294967296; }; }
 
 function allocSim(nx,ny,initData){
-  [...A,...B,Kt,ToolT,SurfA,SurfB,RedT,ObjT].forEach(t=>t&&gl.deleteTexture(t));
+  [...A,...B,Kt,ToolT,SurfA,SurfB,RedT,ObjT,WatT].forEach(t=>t&&gl.deleteTexture(t));
   [...fA,...fB,fK,fTool,fSurfA,fSurfB,fRed,fObj].forEach(f=>f&&gl.deleteFramebuffer(f));
   A=[0,1].map(i=>tex(nx,ny,gl.RGBA32F,gl.RGBA,gl.FLOAT,NEAREST,gl.CLAMP_TO_EDGE, i===0?initData:null));
   B=[0,1].map(()=>tex(nx,ny,gl.RGBA32F,gl.RGBA,gl.FLOAT,NEAREST,gl.CLAMP_TO_EDGE,new Float32Array(nx*ny*4)));
@@ -1351,6 +1517,7 @@ function allocSim(nx,ny,initData){
   SurfB=tex(nx,ny,gl.RGBA16F,gl.RGBA,gl.HALF_FLOAT,LINEAR,gl.CLAMP_TO_EDGE);
   RedT=tex(RED,RED,gl.RGBA32F,gl.RGBA,gl.FLOAT,NEAREST,gl.CLAMP_TO_EDGE);
   ObjT=tex(nx,ny,gl.RGBA16F,gl.RGBA,gl.HALF_FLOAT,MIPLIN,gl.CLAMP_TO_EDGE);
+  WatT=tex(nx,ny,gl.RGBA32F,gl.RGBA,gl.FLOAT,NEAREST,gl.CLAMP_TO_EDGE);
   fA=A.map(t=>fbo([t])); fB=B.map(t=>fbo([t])); fK=fbo([Kt]); fTool=fbo([ToolT]);
   fSurfA=fbo([SurfA]); fSurfB=fbo([SurfB]); fRed=fbo([RedT]); fObj=fbo([ObjT]);
   objWas=true; // clear the new occlusion map on the next frame
@@ -1362,6 +1529,7 @@ function computeCells(){
   cells.hmax=cells.h0*5.0; cells.layer=P.layerPx/cs; cells.hthin=P.thinPx/cs;
   // physical gravity: 9.81 m/s^2 with 1 css px ~ 0.16 mm on phones, slowed a bit for readability
   cells.G = (isTouch? 9.81/(0.00016*cs) : 9.81/(0.00026*cs)) * 0.32 * P.gReal;
+  cells.moatR=P.moatRPx*bScale()/cs; cells.moatZ=cells.h0*0.25; cells.wl=cells.moatZ+cells.h0*0.6;
 }
 
 function setup(keepState){
@@ -1375,9 +1543,11 @@ function setup(keepState){
   if(!(keepState && same)){
     let data=null;
     if(keepState && NX>0) data=resample(nx,ny,c);
+    const old={NX,NY,cs};
     cs=c; NX=nx; NY=ny; computeCells();
     allocSim(NX,NY, data || initialHeights(NX,NY,cs));
     if(data&&data.B){ gl.bindTexture(gl.TEXTURE_2D,B[0]); gl.texSubImage2D(gl.TEXTURE_2D,0,0,0,NX,NY,gl.RGBA,gl.FLOAT,data.B); }
+    builderGridChanged(old, !!data);
   }
   resizeCanvas();
 }
@@ -1405,7 +1575,7 @@ function resizeCanvas(){
 /* ------------------------------------------------------------------ */
 let tool='finger';
 const pointers=new Map();
-function newPointer(x,y){ return {x,y,hist:[[x,y,x,y]],last:[x,y],vx:0,vy:0,t0:simTime,dir:[1,0],z:1,moved:0}; }
+function newPointer(x,y,tl){ return {x,y,hist:[[x,y,x,y]],last:[x,y],vx:0,vy:0,t0:simTime,dir:[1,0],z:1,moved:0,tool:tl||null}; }
 function cellPos(e){ const r=canvas.getBoundingClientRect(); const n=toNat(e.clientX-r.left, e.clientY-r.top); return [n[0]/cs, n[1]/cs]; }
 canvas.addEventListener('pointerdown',e=>{
   e.preventDefault();
@@ -1413,18 +1583,22 @@ canvas.addEventListener('pointerdown',e=>{
   if(menuOpen){ openMenu(false); return; }          // a tap outside the garden menu just closes it
   const p=cellPos(e);
   if(castleMode){ firstInteraction(); placeCastle(p[0],p[1]); return; }
+  if(builderDown(e,p)){ firstInteraction(); return; }
   if(grabItem(e)){ firstInteraction(); return; }
   canvas.setPointerCapture(e.pointerId);
   pointers.set(e.pointerId,newPointer(p[0],p[1]));
   firstInteraction();
 });
 canvas.addEventListener('pointermove',e=>{
+  if(builderMove(e)) return;
   if(moveGrab(e)) return;
   const pt=pointers.get(e.pointerId); if(!pt) return;
   const evs=e.getCoalescedEvents?e.getCoalescedEvents():[e];
   const p=cellPos(evs.length?evs[evs.length-1]:e); pt.x=p[0]; pt.y=p[1];
 });
-function endPointer(e){ releaseGrab(e); const pt=pointers.get(e.pointerId); if(pt){ pointers.delete(e.pointerId); } if(isTouch) requestMotionPermission(); }
+function endPointer(e){ builderUp(e); releaseGrab(e); const pt=pointers.get(e.pointerId); if(pt){ pointers.delete(e.pointerId); if(pt.tool==='moat') finishMoat(pt); } if(isTouch) requestMotionPermission(); }
+canvas.addEventListener('pointerleave',e=>{ if(e.pointerType==='mouse') builderHover(null); });
+canvas.addEventListener('wheel',e=>{ if(builderWheel(e)) e.preventDefault(); },{passive:false});
 canvas.addEventListener('pointerup',endPointer);
 canvas.addEventListener('touchend',()=>{ if(isTouch) requestMotionPermission(); },{passive:true}); // touchend is a user gesture on every iOS version
 canvas.addEventListener('pointercancel',endPointer);
@@ -1433,7 +1607,7 @@ document.addEventListener('gesturestart',e=>e.preventDefault());
 document.addEventListener('touchmove',e=>{ if(e.target===canvas) e.preventDefault(); },{passive:false});
 
 document.querySelectorAll('#bar .tool').forEach(b=>b.addEventListener('click',()=>{
-  setCastleMode(false); noteInteraction(); if(menuOpen) openMenu(false);
+  setCastleMode(false); noteInteraction(); if(menuOpen) openMenu(false); if(ribbonOpen) openRibbon(false);
   tool=b.dataset.tool;
   document.querySelectorAll('#bar .tool').forEach(x=>{ x.classList.toggle('on',x===b); x.setAttribute('aria-pressed',x===b); });
   firstInteraction();
@@ -1460,10 +1634,19 @@ function buildTools(dt){
     if(dist>0.2){ const k=Math.min(1,dist/3); pt.dir=[pt.dir[0]*(1-k)+dx/dist*k, pt.dir[1]*(1-k)+dy/dist*k]; const l=Math.hypot(pt.dir[0],pt.dir[1])||1; pt.dir=[pt.dir[0]/l,pt.dir[1]/l]; }
     const age=simTime-pt.t0;
     const sp=Math.hypot(pt.vx,pt.vy);
-    if(tool==='finger'||tool==='rake'){
+    const tl=pt.tool||tool;
+    if(tl==='moat'){
+      // digging a moat: a wide, deep finger that leaves a smooth channel; the water comes in when it lifts
+      pt.hist.unshift([lx,ly,pt.x,pt.y]); if(pt.hist.length>3) pt.hist.length=3;
+      const plunge=Math.min(1, age/0.12);
+      const z = cells.h0*1.6*(1-plunge)+cells.moatZ*plunge;
+      for(const s of pt.hist) addSeg(s[0],s[1],s[2],s[3],cells.moatR,z,0,1,pt.vx*0.6,pt.vy*0.6);
+      if(plunge>0.5) markMoat(pt, lx, ly, pt.x, pt.y);
+      fingerEnergy+=Math.min(1,sp/120)*plunge;
+    } else if(tl==='finger'||tl==='rake'){
       pt.hist.unshift([lx,ly,pt.x,pt.y]); if(pt.hist.length>3) pt.hist.length=3;
       const plunge=Math.min(1, age/0.09);
-      if(tool==='finger'){
+      if(tl==='finger'){
         const zt=cells.fingerZ; const z = cells.h0*1.25*(1-plunge)+zt*plunge;
         for(const s of pt.hist) addSeg(s[0],s[1],s[2],s[3],cells.fingerR,z,0,1,pt.vx,pt.vy);
         fingerEnergy+=Math.min(1,sp/120)*plunge;
@@ -1477,10 +1660,10 @@ function buildTools(dt){
         fingerEnergy+=Math.min(1,sp/120)*plunge*0.8;
       }
       if(sp>220 && Math.random()<Math.min(0.9,sp/900)) spray(pt, sp);
-    } else if(tool==='smooth'){
+    } else if(tl==='smooth'){
       addSeg(lx,ly,pt.x,pt.y,cells.smoothR,0,1,1,pt.vx,pt.vy);
       fingerEnergy+=Math.min(1,sp/200)*0.6;
-    } else if(tool==='pour'){
+    } else if(tl==='pour'){
       if(pourN<6){ const i=pourN*4; pourU[i]=pt.x; pourU[i+1]=pt.y; pourU[i+2]=cells.pourR; pourU[i+3]=P.pourRate*Math.pow(cells.h0,3)*14; pourN++; }
       pourParticles(pt,dt);
       fingerEnergy+=0.25;
@@ -1770,13 +1953,18 @@ function placeCastle(x,y){
   return true;
 }
 function setCastleMode(on){
+  on = on && mode!=='castle';
   castleMode=on;
-  btnCastle.classList.toggle('on',on); btnCastle.setAttribute('aria-pressed',on);
+  if(mode!=='castle'){ btnCastle.classList.toggle('on',on); btnCastle.setAttribute('aria-pressed',on); }
   canvas.style.cursor = on ? 'copy' : '';
   if(on){ hint.textContent='Tap the sand where you want your castle'; hint.classList.remove('gone'); }
   else if(hint.textContent.startsWith('Tap the sand')) hint.classList.add('gone');
 }
-btnCastle.addEventListener('click',()=>{ firstInteraction(); noteInteraction(); if(menuOpen) openMenu(false); setCastleMode(!castleMode); });
+btnCastle.addEventListener('click',()=>{
+  firstInteraction(); noteInteraction(); if(menuOpen) openMenu(false);
+  if(mode==='castle'){ openRibbon(!ribbonOpen); if(ribbonOpen) analytics.track('castle_ribbon_opened',{}); return; }
+  setCastleMode(!castleMode);
+});
 addEventListener('keydown',e=>{ if(e.key==='Escape') setCastleMode(false); });
 // Packing sound: three pats of a hand on damp sand (a low thump plus a short muffled crunch)
 let patBuf=null;
@@ -1828,7 +2016,7 @@ const analytics = (() => {
       autocapture: false, capture_pageview: false, capture_pageleave: false,
       disable_session_recording: true, disable_surveys: true, person_profiles: 'identified_only',
     }, undefined]);
-    ph.register({ clear_variant: variant, app_version: 'garden-1' });
+    ph.register({ clear_variant: variant, app_version: 'modes-1' });
     const sc = document.createElement('script'); sc.async = true; sc.crossOrigin = 'anonymous';
     sc.src = ANALYTICS.host.replace('.i.posthog.com', '-assets.i.posthog.com') + '/static/array.js';
     document.head.appendChild(sc);
@@ -2290,6 +2478,834 @@ function releaseGrab(e){
 }
 
 /* ------------------------------------------------------------------ */
+/* Modes: Zen Garden (sand tools, classic castle, garden items) and     */
+/* Castle Builder (sand tools, a ribbon of castle pieces, flags, moat). */
+/* Every session starts on the start screen with a fresh tray.          */
+/* ------------------------------------------------------------------ */
+let mode=null;                                                    // 'zen' | 'castle'
+function trayDepth(){ return mode==='castle' ? 1.3 : 1; }        // Castle Builder starts with deeper sand to build with
+function bScale(){ return Math.min(1.5, Math.max(0.95, Math.min(natW||390,natH||390)/340)); }
+
+/* ---- castle pieces ---- */
+// Each piece is a height profile above the ground it rests on, in units of the resting sand depth,
+// at local (x,y) css px: x runs along the piece (its rotation), y across it. 0 = outside the footprint.
+const PIECES = {
+  tower: {label:'Tower',  round:true, scalable:true},
+  wall:  {label:'Wall',   dir:true},
+  level: {label:'Level',  rot:true, scalable:true},
+  spire: {label:'Spire',  round:true, scalable:true},
+  stairs:{label:'Stairs', dir:true},
+  keep:  {label:'Castle', rot:true},
+  flag:  {label:'Flag'},
+  moat:  {label:'Moat'},
+};
+const PIECE_ORDER=['tower','wall','level','spire','stairs','keep','flag','moat'];
+function pieceTip(k){
+  const t=isTouch;
+  switch(k){
+    case 'tower': return t ? 'Touch the sand to place a tower. Drop one on another to build it taller. Pinch to resize.' : 'Click the sand to place a tower. Drop one on another to build it taller. Shift+scroll resizes.';
+    case 'wall': return 'Drag along the sand to build a wall. Keep dragging to add more pieces.';
+    case 'level': return t ? 'Touch to place a new level. Twist with two fingers to turn it, pinch to resize.' : 'Click to place a new level. Scroll to turn it, Shift+scroll to resize.';
+    case 'spire': return t ? 'Touch to drip a spire of wet sand. Pinch to resize.' : 'Click to drip a spire of wet sand. Shift+scroll resizes.';
+    case 'stairs': return 'Touch where the stairs start and drag toward the top.';
+    case 'keep': return t ? 'Touch the sand to build a whole castle. Twist with two fingers to turn it.' : 'Click the sand to build a whole castle. Scroll to turn it.';
+    case 'flag': return t ? 'Touch the top of a tower or wall to plant a flag.' : 'Click the top of a tower or wall to plant a flag.';
+    case 'moat': return 'Dig a moat around your castle. Water fills it when you lift your finger.';
+  }
+  return t ? 'Pick a piece, then touch the sand' : 'Pick a piece, then click the sand';
+}
+function keepRpx(){ return Math.min(120, Math.max(46, 0.15*Math.min(natW,natH))); }
+// half extents (css px) of a piece's bounding box in its own frame
+function pieceExt(k,sc){
+  switch(k){
+    case 'tower': return [24*sc,24*sc];
+    case 'spire': return [21*sc,21*sc];
+    case 'wall': return [29*sc,8.5*sc];
+    case 'level': return [40*sc,40*sc];
+    case 'stairs': return [24*sc,14*sc];
+    case 'keep': return [keepRpx()*1.02,keepRpx()*1.02];
+  }
+  return [8,8];
+}
+function pieceH(k,x,y,sc,o){
+  const nz=0.035*Math.sin(x*0.37+o.seed)*Math.cos(y*0.29-o.seed)+0.025*Math.sin((x-y)*0.13+o.seed*2.1);
+  switch(k){
+    case 'tower':{
+      // a bucket-moulded tower: slightly tapered sides, a crenellated rim, a flat top
+      const R=24*sc, d=Math.hypot(x,y); if(d>=R) return 0;
+      const H=2.35, rt=R*0.86;
+      if(d>rt) return H*(R-d)/(R-rt);
+      if(d>rt*0.72){
+        const nM=Math.max(6,Math.min(12,Math.round(2*Math.PI*rt*0.85/Math.max(11*sc,3.6*cs))));
+        const f=((Math.atan2(y,x)/(2*Math.PI)*nM+o.seed*0.1)%1+1)%1;
+        return H+(f<0.55?0.38:0.06)+nz;
+      }
+      return H+0.1+nz;
+    }
+    case 'spire':{
+      // a drip castle: blobs of runny wet sand stacked into a knobbly spire
+      const R=21*sc; let best=0;
+      for(let j=0;j<5;j++){
+        const rj=R*(1-0.18*j), dx=x-o.jit[j][0]*R*0.1, dy=y-o.jit[j][1]*R*0.1;
+        const d=Math.hypot(dx,dy), th=Math.atan2(dy,dx);
+        const rr=rj*(1+0.14*Math.sin(5*th+o.ph[j])+0.08*Math.sin(9*th+o.ph[j]*2.3)+0.05*Math.sin(14*th+o.ph[j]*0.7));
+        if(d<rr){ const t=d/rr; best=Math.max(best, 0.55*j+0.6*Math.pow(1-t*t,0.35)); }
+      }
+      return best>0 ? best+nz*0.5 : 0;
+    }
+    case 'wall':{
+      // a straight wall with crenellations; the merlon pattern runs on along a chain of pieces
+      const hx=29*sc, hy=8.5*sc, ax=Math.abs(x), ay=Math.abs(y);
+      if(ax>=hx||ay>=hy) return 0;
+      const e=Math.min(hx-ax, hy-ay), H=1.65;
+      const f=(((x+o.phase)/o.per)%1+1)%1;
+      const top=H+(f<0.55?0.5:0)+nz;
+      return Math.min(top, (H+0.5)*e/(2.4*sc));
+    }
+    case 'level':{
+      // a square block with crisp, slightly battered sides and a flat top to build on
+      const hs=40*sc, rr=3*sc, qx=Math.abs(x)-(hs-rr), qy=Math.abs(y)-(hs-rr);
+      const sd=Math.hypot(Math.max(qx,0),Math.max(qy,0))+Math.min(Math.max(qx,qy),0)-rr;
+      const e=-sd; if(e<=0) return 0;
+      let h=1.2*Math.min(1,e/(2.6*sc));
+      if(e>5*sc && e<6.6*sc) h-=0.12;                               // a scored line around the top
+      return h+nz*0.6;
+    }
+    case 'stairs':{
+      const hx=24*sc, hy=14*sc, ax=Math.abs(x), ay=Math.abs(y);
+      if(ax>=hx||ay>=hy) return 0;
+      const n=4, t=(x+hx)/(2*hx), k=Math.min(n-1,Math.floor(t*n));
+      const H=1.9; let h=H*(k+1)/n;
+      const e=Math.min(hy-ay, hx-ax);
+      return Math.min(h+nz*0.4, (H+0.2)*e/(1.6*sc));
+    }
+    case 'keep':{
+      const R=keepRpx(); const H=castleProfile(x/R,y/R,R/cs)-1.0;
+      return H>0.02 ? H : 0;
+    }
+  }
+  return 0;
+}
+function pieceOpts(k){
+  const o={seed:Math.random()*100, phase:0, per:Math.max(13*bScale(),4.4*cs)};
+  if(k==='spire'){ o.jit=[]; o.ph=[]; for(let j=0;j<6;j++){ o.jit.push([Math.random()*2-1,Math.random()*2-1]); o.ph.push(Math.random()*6.283); } }
+  return o;
+}
+
+/* ---- the ribbon ---- */
+const ribbonEl=$('#ribbon'), rTiles=$('#rTiles'), rCap=$('#rCap'), rUndo=$('#rUndo');
+let ribbonOpen=false, sel=null, placing=null, hover=null, ghostDirty=true;
+const selAng={tower:0,wall:0,level:0,spire:0,stairs:-Math.PI/2,keep:0}, selSize={};
+for(const k of PIECE_ORDER){
+  const b=document.createElement('button'); b.className='ptile'; b.dataset.kind=k; b.setAttribute('aria-pressed','false');
+  b.innerHTML=`<canvas width="92" height="92"></canvas><span>${PIECES[k].label}</span>`; b.title=PIECES[k].label;
+  b.addEventListener('click',()=>{ noteInteraction(); selectPiece(sel===k?null:k); });
+  rTiles.appendChild(b);
+}
+function openRibbon(on){
+  ribbonOpen=on;
+  if(on){ setCastleMode(false); ribbonEl.hidden=false; requestAnimationFrame(()=>ribbonEl.classList.add('open')); }
+  else { ribbonEl.classList.remove('open'); ribbonEl.classList.remove('placing'); setTimeout(()=>{ if(!ribbonOpen) ribbonEl.hidden=true; },180); selectPiece(null); placing=null; }
+  document.body.classList.toggle('ribbon',on);
+  if(mode==='castle'){ btnCastle.classList.toggle('on',on); btnCastle.setAttribute('aria-expanded',on); }
+  updateUndoBtn();
+}
+function selectPiece(k){
+  sel=k; hover=null; ghostDirty=true;
+  rTiles.querySelectorAll('.ptile').forEach(t=>{ const on=t.dataset.kind===k; t.classList.toggle('on',on); t.setAttribute('aria-pressed',on); });
+  rCap.textContent=pieceTip(k);
+  canvas.style.cursor = k ? 'copy' : '';
+  if(k){ hint.classList.add('gone'); const t=rTiles.querySelector(`[data-kind="${k}"]`); t && t.scrollIntoView && t.scrollIntoView({block:'nearest',inline:'nearest',behavior:'smooth'}); }
+}
+rUndo.addEventListener('click',()=>{ noteInteraction(); undoLast(); });
+
+/* ---- placing pieces: touch to place, drag to lay walls, twist and pinch with a second finger ---- */
+function builderActive(){ return mode==='castle' && ribbonOpen; }
+function builderDown(e,p){
+  if(!builderActive()) return false;
+  if(placing && placing.id!==e.pointerId){
+    // a second finger turns / resizes the piece being placed
+    const def=PIECES[placing.kind];
+    if(!placing.twist && (def.rot||def.scalable)){
+      placing.twist={id:e.pointerId, p:p.slice(), a0:Math.atan2(p[1]-placing.cur[1],p[0]-placing.cur[0]), d0:Math.max(4,Math.hypot(p[0]-placing.cur[0],p[1]-placing.cur[1])), ang0:selAng[placing.kind]||0, size0:placing.size};
+      try{ canvas.setPointerCapture(e.pointerId); }catch(err){}
+    }
+    return true;
+  }
+  if(!sel) return false;
+  if(sel==='moat'){
+    pushUndo();
+    const pt=newPointer(p[0],p[1],'moat'); pt.moat={cells:new Set(), start:[p[0],p[1]]};
+    pointers.set(e.pointerId,pt); try{ canvas.setPointerCapture(e.pointerId); }catch(err){}
+    return true;
+  }
+  placing={id:e.pointerId, kind:sel, start:p.slice(), cur:p.slice(), path:[p.slice()], size:selSize[sel]||1, twist:null};
+  try{ canvas.setPointerCapture(e.pointerId); }catch(err){}
+  ribbonEl.classList.add('placing'); ghostDirty=true;
+  return true;
+}
+function builderMove(e){
+  if(!placing){
+    if(e.pointerType==='mouse' && builderActive() && sel && sel!=='moat' && !e.buttons){ hover=cellPos(e); ghostDirty=true; }
+    return false;
+  }
+  if(e.pointerId===placing.id){
+    const p=cellPos(e); placing.cur=p;
+    const lp=placing.path[placing.path.length-1];
+    if(Math.hypot(p[0]-lp[0],p[1]-lp[1])*cs>2) placing.path.push(p.slice());
+    if(placing.twist) applyTwist();
+    ghostDirty=true; return true;
+  }
+  if(placing.twist && e.pointerId===placing.twist.id){ placing.twist.p=cellPos(e); applyTwist(); ghostDirty=true; return true; }
+  return false;
+}
+// small towers and spires lose their detail on the sand grid, so they don't shrink as far as a level
+function minSize(k){ return k==='level' ? 0.55 : 0.78; }
+function applyTwist(){
+  const g=placing, t=g.twist, def=PIECES[g.kind];
+  const a=Math.atan2(t.p[1]-g.cur[1],t.p[0]-g.cur[0]), d=Math.hypot(t.p[0]-g.cur[0],t.p[1]-g.cur[1]);
+  if(def.rot) selAng[g.kind]=t.ang0+(a-t.a0);
+  if(def.scalable){ g.size=Math.min(1.7,Math.max(minSize(g.kind),t.size0*d/t.d0)); selSize[g.kind]=g.size; }
+}
+function builderUp(e){
+  if(!placing) return;
+  if(placing.twist && e.pointerId===placing.twist.id){ placing.twist=null; return; }
+  if(e.pointerId!==placing.id) return;
+  const g=placing; placing=null; ribbonEl.classList.remove('placing'); ghostDirty=true;
+  if(e.type==='pointercancel') return;
+  commitGesture(g);
+}
+function builderHover(p){ if(hover||p){ hover=p; ghostDirty=true; } }
+function builderWheel(e){
+  if(!builderActive() || !sel) return false;
+  const def=PIECES[sel];
+  if(e.shiftKey && def.scalable){ selSize[sel]=Math.min(1.7,Math.max(minSize(sel),(selSize[sel]||1)*Math.exp(-(e.deltaY||e.deltaX)*0.0012))); }
+  else if(def.rot||def.dir){ selAng[sel]=(selAng[sel]||0)+Math.sign(e.deltaY||e.deltaX)*Math.PI/24; }
+  else return false;
+  ghostDirty=true; return true;
+}
+addEventListener('keydown',e=>{
+  if(!builderActive()) return;
+  if(e.key==='Escape'){ if(sel) selectPiece(null); else openRibbon(false); }
+  else if((e.key==='r'||e.key==='R') && sel && (PIECES[sel].rot||PIECES[sel].dir)){ selAng[sel]=(selAng[sel]||0)+(e.shiftKey?-1:1)*Math.PI/12; ghostDirty=true; }
+});
+// arc-length parametrisation of a drag path (cells); points past the end continue in the last direction
+function pathAt(path, a){
+  let acc=0;
+  for(let i=1;i<path.length;i++){
+    const p=path[i-1], q=path[i], l=Math.hypot(q[0]-p[0],q[1]-p[1]);
+    if(acc+l>=a && l>0){ const t=(a-acc)/l; return [p[0]+(q[0]-p[0])*t, p[1]+(q[1]-p[1])*t]; }
+    acc+=l;
+  }
+  const n=path.length, q=path[n-1];
+  let p=path[Math.max(0,n-2)]; for(let i=n-2;i>=0;i--){ if(Math.hypot(q[0]-path[i][0],q[1]-path[i][1])>1.5){ p=path[i]; break; } }
+  const l=Math.hypot(q[0]-p[0],q[1]-p[1])||1;
+  return [q[0]+(q[0]-p[0])/l*(a-acc), q[1]+(q[1]-p[1])/l*(a-acc)];
+}
+function pathLen(path){ let s=0; for(let i=1;i<path.length;i++) s+=Math.hypot(path[i][0]-path[i-1][0],path[i][1]-path[i-1][1]); return s; }
+// the pieces a gesture will build (positions in cells)
+function gesturePieces(g){
+  const k=g.kind, sc=bScale()*(g.size||1), ext=pieceExt(k,sc);
+  if(k==='wall'){
+    const hx=ext[0]/cs, len=pathLen(g.path), step=hx*2*0.9, list=[];
+    if(len*cs<10){ const o=pieceOpts(k); o.phase=ext[0]; return [{kind:k,x:g.cur[0],y:g.cur[1],ang:selAng.wall||0,sc,o}]; }
+    // pieces overlap a little so the wall is continuous, and the chain ends under the finger
+    const n=len<=2*hx ? 1 : Math.ceil((len-2*hx)/step)+1, st=n>1 ? (len-2*hx)/(n-1) : 0;
+    for(let i=0;i<n;i++){
+      const a=hx+i*st, p0=pathAt(g.path,a-hx), p1=pathAt(g.path,a+hx), c=pathAt(g.path,a);
+      const o=pieceOpts(k); o.phase=a*cs;
+      list.push({kind:k, x:c[0], y:c[1], ang:Math.atan2(p1[1]-p0[1],p1[0]-p0[0]), sc, o});
+    }
+    return list;
+  }
+  if(k==='stairs'){
+    const hx=ext[0]/cs, d=[g.cur[0]-g.start[0], g.cur[1]-g.start[1]], l=Math.hypot(d[0],d[1]);
+    if(l*cs<10) return [{kind:k,x:g.cur[0],y:g.cur[1],ang:selAng.stairs,sc,o:pieceOpts(k)}];
+    const ang=Math.atan2(d[1],d[0]);
+    return [{kind:k, x:g.start[0]+d[0]/l*hx, y:g.start[1]+d[1]/l*hx, ang, sc, o:pieceOpts(k)}];
+  }
+  return [{kind:k, x:g.cur[0], y:g.cur[1], ang:selAng[k]||0, sc, o:pieceOpts(k)}];
+}
+function commitGesture(g){
+  if(g.kind==='flag'){ plantFlag(g.cur[0],g.cur[1]); return; }
+  const list=gesturePieces(g);
+  if(g.kind==='wall' && list.length) selAng.wall=list[list.length-1].ang;
+  if(g.kind==='stairs' && list.length) selAng.stairs=list[0].ang;
+  buildPieces(list, g.kind);
+}
+
+/* ---- building: pack the piece out of the tray's sand, and let real support decide what stays up ---- */
+function rasterPiece(pc){
+  const ext=pieceExt(pc.kind,pc.sc), rad=Math.hypot(ext[0],ext[1])/cs+1.5;
+  pc.x=Math.min(NX-2-rad, Math.max(rad+1, pc.x)); pc.y=Math.min(NY-2-rad, Math.max(rad+1, pc.y));
+  const c=Math.cos(pc.ang), s=Math.sin(pc.ang), SS=3, out=[];
+  const x0=Math.max(0,Math.floor(pc.x-rad)), x1=Math.min(NX-1,Math.ceil(pc.x+rad)), y0=Math.max(0,Math.floor(pc.y-rad)), y1=Math.min(NY-1,Math.ceil(pc.y+rad));
+  for(let y=y0;y<=y1;y++) for(let x=x0;x<=x1;x++){
+    let sum=0, cov=0;
+    for(let sy=0;sy<SS;sy++) for(let sx=0;sx<SS;sx++){
+      const px=(x+(sx+0.5)/SS-pc.x)*cs, py=(y+(sy+0.5)/SS-pc.y)*cs;
+      const h=pieceH(pc.kind, c*px+s*py, -s*px+c*py, pc.sc, pc.o);
+      if(h>0){ sum+=h; cov++; }
+    }
+    if(cov) out.push({i:(y*NX+x)*4, x, y, hp:sum/(SS*SS), cov:cov/(SS*SS)});
+  }
+  return out;
+}
+function convexHull(pts){
+  pts.sort((a,b)=>a[0]-b[0]||a[1]-b[1]);
+  const cr=(o,a,b)=>(a[0]-o[0])*(b[1]-o[1])-(a[1]-o[1])*(b[0]-o[0]);
+  const lo=[], up=[];
+  for(const p of pts){ while(lo.length>=2 && cr(lo[lo.length-2],lo[lo.length-1],p)<=0) lo.pop(); lo.push(p); }
+  for(let i=pts.length-1;i>=0;i--){ const p=pts[i]; while(up.length>=2 && cr(up[up.length-2],up[up.length-1],p)<=0) up.pop(); up.push(p); }
+  lo.pop(); up.pop(); return lo.concat(up);
+}
+// signed distance from p to the inside of a convex polygon (counter-clockwise); >0 inside
+function insideDist(h,p){
+  if(h.length<3) return -1;
+  let m=1e9;
+  for(let i=0;i<h.length;i++){ const a=h[i], b=h[(i+1)%h.length]; const ex=b[0]-a[0], ey=b[1]-a[1], l=Math.hypot(ex,ey)||1; m=Math.min(m, (ex*(p[1]-a[1])-ey*(p[0]-a[0]))/l); }
+  return m;
+}
+// take `need` cells of loose sand from around (cx,cy), nearest first, smoothly fading out; false if there isn't enough
+function gatherSand(d, cx, cy, rc, need, fp){
+  if(need<=0) return true;
+  const keep=cells.h0*0.08;
+  const wgt=(r,R)=>{ if(R>1e8) return 1; const t=Math.min(1,Math.max(0,(r-R*0.3)/(R*0.7))); return 0.5+0.5*Math.cos(Math.PI*t); };
+  const box=R=>[Math.max(0,Math.floor(cy-R)), Math.min(NY-1,Math.ceil(cy+R)), Math.max(0,Math.floor(cx-R)), Math.min(NX-1,Math.ceil(cx+R))];
+  const avail=R=>{ let a=0; const [r0,r1,c0,c1]=box(R);
+    for(let y=r0;y<=r1;y++) for(let x=c0;x<=c1;x++){ const i=(y*NX+x)*4; if(fp.has(i)) continue; const r=Math.hypot(x-cx,y-cy); if(r>R) continue;
+      a+=wgt(r,R)*Math.max(0,d[i]-Math.max(d[i+3],0)-keep); } return a; };
+  let R=0, k=0;
+  for(const m of [1.7,2.3,3.0,4.0,5.5,8.0,1e9]){ const Rm=m*rc; const a=avail(Rm); if(a>0 && need/a<=(m>1e8?0.97:0.85)){ R=Rm; k=need/a; break; } }
+  if(!R) return false;
+  const [r0,r1,c0,c1]=box(R);
+  for(let y=r0;y<=r1;y++) for(let x=c0;x<=c1;x++){ const i=(y*NX+x)*4; if(fp.has(i)) continue; const r=Math.hypot(x-cx,y-cy); if(r>R) continue;
+    const loose=Math.max(0,d[i]-Math.max(d[i+3],0)-keep); if(loose<=0) continue;
+    d[i]-=k*wgt(r,R)*loose; d[i+1]=0; d[i+2]=0; }
+  return true;
+}
+function stampPiece(d, bd, pc, fx){
+  const cl=rasterPiece(pc); if(!cl.length) return 'empty';
+  const h0=cells.h0, n=cl.length;
+  // it comes to rest on the highest ground under it (the top 30% of its footprint)
+  const core=cl.filter(c=>c.cov>0.6), hs=(core.length?core:cl).map(c=>d[c.i]).sort((a,b)=>a-b);
+  const base=hs[Math.min(hs.length-1,Math.floor(hs.length*0.7))];
+  const sup=new Uint8Array(n), key=new Map(); let nsup=0, sx=0, sy=0, sm=0; const spts=[];
+  cl.forEach((c,k)=>{ key.set(c.y*NX+c.x,k); if(d[c.i]>=base-0.3*h0){ sup[k]=1; nsup++; spts.push([c.x+0.5,c.y+0.5]); } const m=c.hp*c.cov; sx+=m*(c.x+0.5); sy+=m*(c.y+0.5); sm+=m; });
+  // damp sand holds a short overhang or bridges a narrow gap: distance from each cell to the nearest support
+  const dist=new Float32Array(n).fill(1e9), q=[];
+  for(let k=0;k<n;k++) if(sup[k]){ dist[k]=0; q.push(k); }
+  for(let qi2=0;qi2<q.length;qi2++){ const k=q[qi2], c=cl[k];
+    for(const [ox,oy,w] of [[1,0,1],[-1,0,1],[0,1,1],[0,-1,1],[1,1,1.41],[-1,1,1.41],[1,-1,1.41],[-1,-1,1.41]]){
+      const j=key.get((c.y+oy)*NX+c.x+ox); if(j===undefined) continue; if(dist[k]+w<dist[j]){ dist[j]=dist[k]+w; q.push(j); } } }
+  // does its centre of mass sit over its support? If not, or if almost nothing holds it up, it topples
+  const com=[sx/sm, sy/sm];
+  const hull=spts.length>=3 ? convexHull(spts) : [];
+  const ext=pieceExt(pc.kind,pc.sc);
+  const tipped = nsup/n<0.25 || insideDist(hull,com) < Math.max(0.6, 0.06*Math.min(ext[0],ext[1])/cs);
+  const reach=Math.max(2.5, 0.85*h0);
+  // plan every column first; nothing changes unless there is enough loose sand to build it
+  const plan=[]; let need=0, sag=0, brk=0;
+  cl.forEach((c,k)=>{
+    const s=d[c.i], top=base+c.hp*h0, w0=Math.min(Math.max(d[c.i+3],0),s);
+    let col, w, lift=0, t0=0;
+    if(tipped){ col=s+c.hp*h0*0.75; w=w0; lift=top-col; t0=0.03+Math.random()*0.1; brk++; }
+    else if(sup[k] || dist[k]<=reach){ col=Math.max(s,top); w=col; if(col===top && c.cov>0.5){ lift=0.2*h0; } }
+    else if(base-s<=1.0*h0){ col=s+c.hp*h0*0.92; w=col; lift=-(top-col); sag++; }
+    else { col=s+c.hp*h0*0.8; w=w0; lift=top-col; t0=0.1+0.08*Math.random(); brk++; }
+    need+=col-s; plan.push([c,col,w,lift,t0]);
+  });
+  const fp=new Set(cl.map(c=>c.i));
+  if(!gatherSand(d, pc.x, pc.y, Math.hypot(ext[0],ext[1])/cs, need, fp)) return 'short';
+  for(const [c,col,w,lift,t0] of plan){
+    d[c.i]=col; d[c.i+1]=0; d[c.i+2]=0; d[c.i+3]=w;
+    if(lift){ bd[c.i+2]=lift; bd[c.i+3]=simTime+t0; }
+    if((tipped || lift>0.3*h0) && Math.random()<0.18) fx.push([c.x+0.5,c.y+0.5,base+c.hp*h0]);
+  }
+  return tipped ? 'tip' : brk>n*0.04 ? 'break' : sag>n*0.04 ? 'sag' : 'ok';
+}
+let fallTipShown=false;
+function buildPieces(list, kind){
+  if(!list.length) return;
+  const d=readTex(fA[0]), before=d.slice(), bd=readTex(fB[0]);
+  const fx=[], res={ok:0,sag:0,break:0,tip:0,short:0,empty:0};
+  for(const pc of list){ const r=stampPiece(d,bd,pc,fx); res[r]++; if(r==='short') break; }
+  const built=res.ok+res.sag+res.break+res.tip;
+  if(built){
+    pushUndo(before);
+    gl.bindTexture(gl.TEXTURE_2D,A[0]); gl.texSubImage2D(gl.TEXTURE_2D,0,0,0,NX,NY,gl.RGBA,gl.FLOAT,d);
+    gl.bindTexture(gl.TEXTURE_2D,B[0]); gl.texSubImage2D(gl.TEXTURE_2D,0,0,0,NX,NY,gl.RGBA,gl.FLOAT,bd);
+    castlesAny=true;
+    // a puff of grains where pieces break up
+    for(let j=0;j<Math.min(fx.length,700);j++){ const [x,y,z]=fx[j]; const a=Math.random()*6.283, v=8+Math.random()*26;
+      addPart(x,y,z,Math.cos(a)*v,Math.sin(a)*v,cells.G*0.004*Math.random(),1); }
+    if(res.ok+res.sag) packSound();
+    if(res.break+res.tip){ setTimeout(crumbleSound, 90); }
+    try{ navigator.vibrate && navigator.vibrate(res.break+res.tip ? [10,60,30] : [14,90,14,90,26]); }catch(e){}
+    if((res.break||res.tip) && !fallTipShown){ fallTipShown=true; setTimeout(()=>toast('Too little support underneath, so part of it crumbled.'),500); }
+  }
+  if(res.short){
+    toast(built ? `Ran out of loose sand after ${built} piece${built>1?'s':''}. Pour in more sand, or shake to knock something down.`
+                : 'Not enough loose sand to build that. Pour in more sand, or shake to knock something down.');
+  }
+  analytics.track('castle_piece_placed', {piece:kind, pieces:built, ok:res.ok, sagged:res.sag, broke:res.break, toppled:res.tip, short:res.short>0});
+  noteInteraction();
+}
+// a dry crumbling hiss for pieces that break off
+function crumbleSound(){
+  if(!audio||!soundOn) return;
+  const ctx=audio.ctx, n=Math.floor(ctx.sampleRate*0.7), buf=ctx.createBuffer(1,n,ctx.sampleRate), c=buf.getChannelData(0);
+  for(let i=0;i<n;i++){ const t=i/ctx.sampleRate; c[i]=(Math.random()*2-1)*(Math.random()<0.08?1:0.35)*Math.min(1,t*60)*Math.exp(-t*5); }
+  const src=ctx.createBufferSource(); src.buffer=buf;
+  const bp=ctx.createBiquadFilter(); bp.type='bandpass'; bp.frequency.value=1500; bp.Q.value=0.6;
+  const g=ctx.createGain(); g.gain.value=0.5;
+  src.connect(bp); bp.connect(g); g.connect(ctx.destination); src.start();
+}
+
+/* ---- undo: the tray as it was before the last piece, flag or moat ---- */
+const undoStack=[];
+function pushUndo(a){
+  undoStack.push({A:a||readTex(fA[0]), flags:flags.map(f=>Object.assign({},f)), wat:waterM.slice(), any:waterAny, N:[NX,NY]});
+  if(undoStack.length>6) undoStack.shift();
+  updateUndoBtn();
+}
+function updateUndoBtn(){ rUndo.disabled=!undoStack.length; }
+function undoLast(){
+  const s=undoStack.pop(); if(!s){ updateUndoBtn(); return; }
+  if(s.N[0]!==NX||s.N[1]!==NY){ undoStack.length=0; updateUndoBtn(); return; }
+  gl.bindTexture(gl.TEXTURE_2D,A[0]); gl.texSubImage2D(gl.TEXTURE_2D,0,0,0,NX,NY,gl.RGBA,gl.FLOAT,s.A);
+  const bd=readTex(fB[0]); for(let i=0;i<NX*NY;i++){ bd[i*4+2]=0; bd[i*4+3]=0; }
+  gl.bindTexture(gl.TEXTURE_2D,B[0]); gl.texSubImage2D(gl.TEXTURE_2D,0,0,0,NX,NY,gl.RGBA,gl.FLOAT,bd);
+  flags=s.flags; waterM=s.wat; waterAny=s.any; uploadWater();
+  for(const pt of pointers.values()) pt.tool==='moat' && (pt.moat.cells=new Set());
+  np=0; castlesAny=true; updateUndoBtn();
+  analytics.track('castle_undo', {});
+}
+
+/* ---- moat: dig a channel; water runs in along it from where you started, and stays level as the tray tilts ---- */
+let waterM=new Float32Array(0), waterAny=false, wDirty=null;
+let wS=[0,0], wSv=[0,0];                                          // water surface slope (sloshes as the tray tilts)
+function clearWater(){ waterM=new Float32Array(NX*NY*4); for(let i=0;i<NX*NY;i++) waterM[i*4+1]=1e9; waterAny=false; wS=[0,0]; wSv=[0,0]; uploadWater(); }
+function uploadWater(){
+  if(!WatT) return;
+  gl.bindTexture(gl.TEXTURE_2D,WatT); gl.texSubImage2D(gl.TEXTURE_2D,0,0,0,NX,NY,gl.RGBA,gl.FLOAT,waterM); wDirty=null;
+}
+function flushWater(){
+  if(!wDirty) return;
+  const [y0,y1]=wDirty; wDirty=null;
+  gl.bindTexture(gl.TEXTURE_2D,WatT); gl.texSubImage2D(gl.TEXTURE_2D,0,0,y0,NX,y1-y0+1,gl.RGBA,gl.FLOAT,waterM.subarray(y0*NX*4,(y1+1)*NX*4));
+}
+function markMoat(pt, ax, ay, bx, by){
+  const R=cells.moatR*1.15, abx=bx-ax, aby=by-ay, l2=abx*abx+aby*aby;
+  const x0=Math.max(0,Math.floor(Math.min(ax,bx)-R)), x1=Math.min(NX-1,Math.ceil(Math.max(ax,bx)+R));
+  const y0=Math.max(0,Math.floor(Math.min(ay,by)-R)), y1=Math.min(NY-1,Math.ceil(Math.max(ay,by)+R));
+  for(let y=y0;y<=y1;y++) for(let x=x0;x<=x1;x++){
+    const px=x+0.5-ax, py=y+0.5-ay, t=l2>0?Math.min(1,Math.max(0,(px*abx+py*aby)/l2)):0;
+    const r=Math.hypot(px-abx*t, py-aby*t); if(r>=R) continue;
+    const m=1-Math.min(1,Math.max(0,(r-R*0.62)/(R*0.38))), i=(y*NX+x)*4;
+    if(m>waterM[i]){ waterM[i]=m; if(waterM[i+1]>=1e8) pt.moat.cells.add(i); }
+  }
+  waterAny=true; castlesAny=true;
+  wDirty = wDirty ? [Math.min(wDirty[0],y0), Math.max(wDirty[1],y1)] : [y0,y1];
+}
+function finishMoat(pt){
+  const S=pt.moat.cells; if(!S.size) return;
+  const now=simTime, cellT=cs/380;                       // the water runs along the channel at ~380 px/s
+  const T=new Map(); for(const i of S) T.set(i,1e9);
+  const flood=(seeds)=>{ const q=seeds.slice(); for(let k=0;k<q.length;k++){ const i=q[k], t=T.get(i), c=i/4, x=c%NX, y=(c-x)/NX;
+    for(const [ox,oy] of [[1,0],[-1,0],[0,1],[0,-1],[1,1],[-1,1],[1,-1],[-1,-1]]){ const xx=x+ox, yy=y+oy; if(xx<0||yy<0||xx>=NX||yy>=NY) continue;
+      const j=(yy*NX+xx)*4; const tj=T.get(j); if(tj===undefined) continue; const nt=t+cellT*(ox&&oy?1.41:1); if(nt<tj){ T.set(j,nt); q.push(j); } } } };
+  // from where the moat was started...
+  const si=(Math.min(NY-1,Math.max(0,Math.floor(pt.moat.start[1])))*NX+Math.min(NX-1,Math.max(0,Math.floor(pt.moat.start[0]))))*4;
+  let s0=si; if(!T.has(s0)){ let best=1e9; for(const i of S){ const c=i/4, x=c%NX, y=(c-x)/NX, r=Math.hypot(x-pt.moat.start[0],y-pt.moat.start[1]); if(r<best){ best=r; s0=i; } } }
+  T.set(s0, now+0.3); const seeds=[s0];
+  // ...and from any water it now connects to
+  for(const i of S){ const c=i/4, x=c%NX, y=(c-x)/NX;
+    for(const [ox,oy] of [[1,0],[-1,0],[0,1],[0,-1]]){ const xx=x+ox, yy=y+oy; if(xx<0||yy<0||xx>=NX||yy>=NY) continue; const j=(yy*NX+xx)*4;
+      if(waterM[j]>0.05 && waterM[j+1]<1e8){ const t=Math.max(now,waterM[j+1])+0.05; if(t<T.get(i)){ T.set(i,t); seeds.push(i); } } } }
+  flood(seeds);
+  for(const [i,t] of T) waterM[i+1]= t<1e8 ? t : now+0.3;
+  pt.moat.cells=new Set();
+  waterBodies(); uploadWater(); waterAny=true;
+  setTimeout(()=>{ if(waterAny) waterSound(); }, 250);
+  analytics.track('castle_moat_dug', {cells:S.size});
+  noteInteraction();
+}
+// connected bodies of water and their centres (the water surface pivots about its centre when tilted)
+function waterBodies(){
+  const N=NX*NY, lab=new Int32Array(N).fill(-1), st=[];
+  for(let s=0;s<N;s++){
+    if(lab[s]>=0 || waterM[s*4]<0.05) continue;
+    let sx=0, sy=0, sm=0; const mem=[]; st.push(s); lab[s]=s;
+    while(st.length){ const c=st.pop(); mem.push(c); const x=c%NX, y=(c-x)/NX, m=waterM[c*4]; sx+=m*(x+0.5); sy+=m*(y+0.5); sm+=m;
+      if(x>0 && lab[c-1]<0 && waterM[(c-1)*4]>=0.05){ lab[c-1]=s; st.push(c-1); }
+      if(x<NX-1 && lab[c+1]<0 && waterM[(c+1)*4]>=0.05){ lab[c+1]=s; st.push(c+1); }
+      if(y>0 && lab[c-NX]<0 && waterM[(c-NX)*4]>=0.05){ lab[c-NX]=s; st.push(c-NX); }
+      if(y<NY-1 && lab[c+NX]<0 && waterM[(c+NX)*4]>=0.05){ lab[c+NX]=s; st.push(c+NX); } }
+    for(const c of mem){ waterM[c*4+2]=sx/sm; waterM[c*4+3]=sy/sm; }
+  }
+}
+function waterSound(){
+  if(!audio||!soundOn) return;
+  const ctx=audio.ctx, n=Math.floor(ctx.sampleRate*1.6), buf=ctx.createBuffer(1,n,ctx.sampleRate), c=buf.getChannelData(0);
+  let b=0; for(let i=0;i<n;i++){ const t=i/ctx.sampleRate; b=b*0.97+(Math.random()*2-1)*0.03; c[i]=(b*6+(Math.random()*2-1)*0.08)*Math.min(1,t*4)*Math.exp(-t*1.6); }
+  const src=ctx.createBufferSource(); src.buffer=buf;
+  const lp=ctx.createBiquadFilter(); lp.type='lowpass'; lp.frequency.value=1100;
+  const g=ctx.createGain(); g.gain.value=0.6;
+  src.connect(lp); lp.connect(g); g.connect(ctx.destination); src.start();
+}
+function stepWater(dt){
+  if(!waterAny) return;
+  // the surface stays level in the room, so relative to the tray it leans toward the low side; it overshoots a little (slosh)
+  let tx=gx/Math.max(gz,1e-6), ty=gy/Math.max(gz,1e-6); const tl=Math.hypot(tx,ty); if(tl>1.2){ tx*=1.2/tl; ty*=1.2/tl; }
+  for(const [k,t] of [[0,tx],[1,ty]]){ const a=40*(t-wS[k])-3*wSv[k]+(shake>0.15?(Math.random()-0.5)*shake*60:0); wSv[k]+=a*dt; wS[k]+=wSv[k]*dt; }
+}
+
+/* ---- flags: toothpick flags planted in the castle; they topple when the sand under them gives way ---- */
+let flags=[], flagSeq=0;
+const FLAG_COLS=[[0.80,0.16,0.13],[0.14,0.31,0.72],[0.94,0.72,0.12],[0.94,0.92,0.87],[0.15,0.53,0.27]].map(c=>c.map(v=>Math.pow(v,2.2)));
+const PROBE_N=32, probeT=tex(PROBE_N,1,gl.RGBA32F,gl.RGBA,gl.FLOAT,NEAREST,gl.CLAMP_TO_EDGE), fProbe=fbo([probeT]);
+const probePbo=gl.createBuffer(), probeData=new Float32Array(PROBE_N*4), probePts=new Float32Array(PROBE_N*2);
+gl.bindBuffer(gl.PIXEL_PACK_BUFFER,probePbo); gl.bufferData(gl.PIXEL_PACK_BUFFER,probeData.byteLength,gl.STREAM_COPY); gl.bindBuffer(gl.PIXEL_PACK_BUFFER,null);
+let probeFence=null, probeRefs=[];
+function plantFlag(x,y){
+  if(flags.filter(f=>f.st!=='fade').length>=24){ toast('That is a lot of flags. Knock a few down first.'); return; }
+  x=Math.min(NX-2,Math.max(1,x)); y=Math.min(NY-2,Math.max(1,y));
+  const cx=Math.floor(x), cy=Math.floor(y), px=new Float32Array(9*4);
+  gl.bindFramebuffer(gl.FRAMEBUFFER,fA[0]); gl.readPixels(cx-1,cy-1,3,3,gl.RGBA,gl.FLOAT,px);
+  let h=0; for(let k=0;k<9;k++) h=Math.max(h,px[k*4]);
+  pushUndo();
+  flags.push({id:++flagSeq, x, y, zb:h, gh:null, col:FLAG_COLS[flagSeq%FLAG_COLS.length], st:'up', t:0, th:0, ph:Math.random()*6.283, fd:[1,0], alpha:1, rise:0});
+  flagSound(); try{ navigator.vibrate && navigator.vibrate(10); }catch(e){}
+  analytics.track('castle_flag_planted', {flags:flags.length});
+  noteInteraction();
+}
+function flagSound(){
+  if(!audio||!soundOn) return;
+  const ctx=audio.ctx, t=ctx.currentTime+0.01;
+  const o=ctx.createOscillator(); o.type='triangle'; o.frequency.setValueAtTime(420,t); o.frequency.exponentialRampToValueAtTime(180,t+0.06);
+  const g=ctx.createGain(); g.gain.setValueAtTime(0.0001,t); g.gain.exponentialRampToValueAtTime(0.25,t+0.004); g.gain.exponentialRampToValueAtTime(0.0001,t+0.09);
+  o.connect(g); g.connect(ctx.destination); o.start(t); o.stop(t+0.1);
+}
+function knockFlag(f, dir){
+  if(f.st!=='up') return;
+  const a=Math.random()*6.283; f.fd=dir||[Math.cos(a),Math.sin(a)]; f.st='fall'; f.t=0;
+}
+function stepFlags(dt){
+  if(!flags.length) return;
+  const h0=cells.h0, gl2=Math.hypot(gx,gy), tilt=gl2/Math.max(gz,1e-6), down=gl2>1e-6?[gx/gl2,gy/gl2]:null;
+  for(const f of flags){
+    f.rise=Math.min(1,f.rise+dt*5);
+    if(f.st==='up'){
+      if(f.gh!=null){
+        if(f.gh<f.zb-0.45*h0) knockFlag(f, down && tilt>0.5 ? down : null);
+        else if(f.gh>f.zb+1.6*h0){ f.st='fade'; f.t=0; }          // buried by sand
+        else f.zb+=(f.gh-f.zb)*Math.min(1,dt*6);
+      }
+      if(shake>0.35 && Math.random()<dt*(shake-0.3)*2.5) knockFlag(f, null);
+      if(tilt>1.05 && Math.random()<dt*(tilt-1.05)*2) knockFlag(f, down);
+    } else if(f.st==='fall'){
+      f.t+=dt; f.th=Math.min(Math.PI/2-0.05, 0.5*16*f.t*f.t);
+      if(f.gh!=null && f.gh<f.zb) f.zb+=(f.gh-f.zb)*Math.min(1,dt*10);
+      if(f.th>=Math.PI/2-0.05){ f.st='down'; f.t=0; }
+    } else if(f.st==='down'){
+      f.t+=dt; if(f.gh!=null) f.zb+=(f.gh-f.zb)*Math.min(1,dt*6);
+      if(f.t>6){ f.st='fade'; f.t=0; }
+    } else if(f.st==='fade'){ f.t+=dt; f.alpha=Math.max(0,1-f.t/0.8); }
+  }
+  flags=flags.filter(f=>!(f.st==='fade' && f.alpha<=0));
+}
+function probeFlags(){
+  if(probeFence){
+    const st=gl.clientWaitSync(probeFence,0,0);
+    if(st===gl.ALREADY_SIGNALED||st===gl.CONDITION_SATISFIED){
+      gl.deleteSync(probeFence); probeFence=null;
+      gl.bindBuffer(gl.PIXEL_PACK_BUFFER,probePbo); gl.getBufferSubData(gl.PIXEL_PACK_BUFFER,0,probeData); gl.bindBuffer(gl.PIXEL_PACK_BUFFER,null);
+      probeRefs.forEach((f,k)=>{ f.gh=probeData[k*4]; });
+    }
+    return;
+  }
+  if(!flags.length || frameN%4) return;
+  probeRefs=flags.slice(0,PROBE_N);
+  probeRefs.forEach((f,k)=>{ probePts[k*2]=f.x; probePts[k*2+1]=f.y; });
+  run(progs.probe, fProbe, u=>{ gl.uniform2i(u.uN,NX,NY); bindTex(progs.probe,'uA',0,A[0]); gl.uniform2fv(u.uPts,probePts); });
+  gl.bindBuffer(gl.PIXEL_PACK_BUFFER,probePbo); gl.readPixels(0,0,PROBE_N,1,gl.RGBA,gl.FLOAT,0); gl.bindBuffer(gl.PIXEL_PACK_BUFFER,null);
+  probeFence=gl.fenceSync(gl.SYNC_GPU_COMMANDS_COMPLETE,0); gl.flush();
+}
+const flagVerts=new Float32Array(24*400*6); const fvao=gl.createVertexArray(), fbuf=gl.createBuffer();
+gl.bindVertexArray(fvao); gl.bindBuffer(gl.ARRAY_BUFFER,fbuf); gl.bufferData(gl.ARRAY_BUFFER,flagVerts.byteLength,gl.DYNAMIC_DRAW);
+gl.enableVertexAttribArray(0); gl.vertexAttribPointer(0,2,gl.FLOAT,false,24,0);
+gl.enableVertexAttribArray(1); gl.vertexAttribPointer(1,4,gl.FLOAT,false,24,8); gl.bindVertexArray(null);
+function natToScreen(x,y){ const dx=x-ROFF[0], dy=y-ROFF[1]; return [R0[0]*dx+R1[0]*dy, R0[1]*dx+R1[1]*dy]; }
+function drawFlags(L){
+  if(!flags.length) return;
+  const sc=bScale(), PH=40*sc, CW=24*sc, CH=15*sc, k=0.62, NI=10, NJ=3;
+  const U=[-R0[1],-R1[1]];                                       // screen-up, in tray coordinates
+  const Lz=Math.max(L[2],0.15), sun=LOOK.sun, sky=LOOK.sky, t=simTime;
+  const V=(()=>{ const v=[-U[0]*k,-U[1]*k,1], l=Math.hypot(...v); return v.map(a=>a/l); })();
+  let nv=0, nShadow=0;
+  const push=(p,c)=>{ const o=nv*6; flagVerts[o]=p[0]; flagVerts[o+1]=p[1]; flagVerts[o+2]=c[0]; flagVerts[o+3]=c[1]; flagVerts[o+4]=c[2]; flagVerts[o+5]=c[3]; nv++; };
+  const geo=[];
+  const wind=0.35+0.25*Math.sin(t*0.37)+0.15*Math.sin(t*1.3);
+  for(const f of flags){
+    const bx=f.x*cs, by=f.y*cs, rise=1-Math.pow(1-f.rise,3);
+    const st=Math.sin(f.th), ct=Math.cos(f.th);
+    const A=[f.fd[0]*st, f.fd[1]*st, ct];                        // pole axis
+    let W=[Math.cos(0.5+0.2*Math.sin(t*0.21)), Math.sin(0.5+0.2*Math.sin(t*0.21)), 0];
+    const wa=W[0]*A[0]+W[1]*A[1]+W[2]*A[2]; W=[W[0]-A[0]*wa, W[1]-A[1]*wa, W[2]-A[2]*wa]; const wl=Math.hypot(...W)||1; W=W.map(v=>v/wl);
+    const N=[W[1]*A[2]-W[2]*A[1], W[2]*A[0]-W[0]*A[2], W[0]*A[1]-W[1]*A[0]];
+    const ph=PH*rise, top=[A[0]*ph, A[1]*ph, A[2]*ph];
+    const amp=(f.st==='down'?0.15:1)*(1+shake*2);
+    const P=(u,v)=>{ const a=(0.4+3.4*u)*amp*sc*(0.8+wind), w=a*Math.sin(u*7.5-t*(7+3*wind)+f.ph)+0.6*a*Math.sin(u*3.1-t*4.3+f.ph*1.7);
+      const uu=u*CW, vv=v*CH*(1-0.12*u);
+      return [top[0]-A[0]*vv+W[0]*uu+N[0]*w, top[1]-A[1]*vv+W[1]*uu+N[1]*w, top[2]-A[2]*vv+W[2]*uu+N[2]*w-1.2*sc*u*u*(1-st)]; };
+    const nrm=u=>{ const a=(0.4+3.4*u)*amp*sc*(0.8+wind), dw=(a*7.5*Math.cos(u*7.5-t*(7+3*wind)+f.ph)+0.6*a*3.1*Math.cos(u*3.1-t*4.3+f.ph*1.7))/CW;
+      let n=[N[0]-W[0]*dw, N[1]-W[1]*dw, N[2]-W[2]*dw]; const l=Math.hypot(...n)||1; n=n.map(v=>v/l);
+      if(n[0]*V[0]+n[1]*V[1]+n[2]*V[2]<0) n=n.map(v=>-v); return n; };
+    const scr=p=>natToScreen(bx+p[0]+U[0]*p[2]*k, by+p[1]+U[1]*p[2]*k);
+    const shd=p=>natToScreen(bx+p[0]-L[0]/Lz*p[2], by+p[1]-L[1]/Lz*p[2]);
+    geo.push({f, P, nrm, scr, shd, top, A, sy:natToScreen(bx,by)[1]});
+  }
+  // shadows first, then flags from the back of the scene to the front
+  const quad=(a,b,c,d,ca,cb,cc,cd)=>{ push(a,ca); push(b,cb); push(c,cc); push(a,ca); push(c,cc); push(d,cd); };
+  const poleQuad=(g,map,col)=>{ const b0=map([0,0,0]), b1=map(g.top); const dx=b1[0]-b0[0], dy=b1[1]-b0[1], l=Math.hypot(dx,dy)||1, w=1.1*sc, nx=-dy/l*w, ny=dx/l*w;
+    quad([b0[0]+nx,b0[1]+ny],[b1[0]+nx,b1[1]+ny],[b1[0]-nx,b1[1]-ny],[b0[0]-nx,b0[1]-ny],col,col,col,col); };
+  for(const g of geo){
+    const sa=[0,0,0,-0.38*g.f.alpha];
+    poleQuad(g,g.shd,sa);
+    for(let i=0;i<NI;i++) for(let j=0;j<NJ;j++){ const u0=i/NI,u1=(i+1)/NI,v0=j/NJ,v1=(j+1)/NJ;
+      quad(g.shd(g.P(u0,v0)),g.shd(g.P(u1,v0)),g.shd(g.P(u1,v1)),g.shd(g.P(u0,v1)),sa,sa,sa,sa); }
+  }
+  nShadow=nv;
+  geo.sort((a,b)=>a.sy-b.sy);
+  const Ln=(()=>{ const l=Math.hypot(...L); return L.map(v=>v/l); })();
+  for(const g of geo){
+    const al=g.f.alpha;
+    const wood=[0.66,0.50,0.30].map((c,i)=>c*(sun[i]*0.5*Math.max(Ln[2],0.2)+sky[i]*1.3));
+    poleQuad(g,g.scr,[...wood,al]);
+    const shade=u=>{ const n=g.nrm(u); const dl=n[0]*Ln[0]+n[1]*Ln[1]+n[2]*Ln[2];
+      const lit=Math.max(dl,0)+0.35*Math.max(-dl,0); return g.f.col.map((c,i)=>c*(sun[i]*lit*0.75+sky[i]*0.9)).concat([al]); };
+    for(let i=0;i<NI;i++){ const u0=i/NI,u1=(i+1)/NI, c0=shade(u0), c1=shade(u1);
+      for(let j=0;j<NJ;j++){ const v0=j/NJ,v1=(j+1)/NJ;
+        quad(g.scr(g.P(u0,v0)),g.scr(g.P(u1,v0)),g.scr(g.P(u1,v1)),g.scr(g.P(u0,v1)),c0,c1,c1,c0); } }
+  }
+  gl.useProgram(progs.flag.p); gl.bindFramebuffer(gl.FRAMEBUFFER,null); gl.viewport(0,0,canvas.width,canvas.height);
+  gl.uniform2f(progs.flag.u.uScreen,vw,vh); gl.uniform1f(progs.flag.u.uExposure,LOOK.exposure);
+  gl.bindVertexArray(fvao); gl.bindBuffer(gl.ARRAY_BUFFER,fbuf); gl.bufferSubData(gl.ARRAY_BUFFER,0,flagVerts,0,nv*6);
+  gl.enable(gl.BLEND); gl.blendFunc(gl.SRC_ALPHA,gl.ONE_MINUS_SRC_ALPHA);
+  gl.drawArrays(gl.TRIANGLES,0,nv);
+  gl.disable(gl.BLEND); gl.bindVertexArray(null);
+}
+
+/* ---- ghost: an outline of what you are about to build ---- */
+const ghostEl=$('#ghost'), gctx=ghostEl.getContext('2d');
+let ghostHad=false;
+function sizeGhost(){ const r=Math.min(DPR,2); ghostEl.width=Math.round(innerWidth*r); ghostEl.height=Math.round(innerHeight*r); ghostEl._r=r; ghostDirty=true; }
+sizeGhost(); addEventListener('resize',sizeGhost);
+function drawGhost(){
+  if(!ghostDirty) return; ghostDirty=false;
+  const want = builderActive() && sel && sel!=='moat' && (placing || hover);
+  if(!want){ if(ghostHad){ gctx.setTransform(1,0,0,1,0,0); gctx.clearRect(0,0,ghostEl.width,ghostEl.height); ghostHad=false; } return; }
+  ghostHad=true;
+  const r=ghostEl._r; gctx.setTransform(1,0,0,1,0,0); gctx.clearRect(0,0,ghostEl.width,ghostEl.height);
+  // nat css px -> screen css px -> device px
+  const a=R0[0], b=R0[1], c=R1[0], d=R1[1];
+  gctx.setTransform(a*r,b*r,c*r,d*r,-(a*ROFF[0]+c*ROFF[1])*r,-(b*ROFF[0]+d*ROFF[1])*r);
+  const g=placing || {kind:sel, start:hover, cur:hover, path:[hover], size:selSize[sel]||1};
+  gctx.lineJoin='round'; gctx.lineCap='round';
+  const fill='rgba(255,243,226,0.16)', line='rgba(255,246,232,0.9)', soft='rgba(255,246,232,0.45)';
+  const stroke=(w,c,dash)=>{ gctx.lineWidth=w; gctx.strokeStyle=c; gctx.setLineDash(dash||[]); gctx.stroke(); };
+  if(g.kind==='flag'){
+    const [x,y]=[g.cur[0]*cs,g.cur[1]*cs], s=bScale(); const U=[-R0[1],-R1[1]];
+    gctx.beginPath(); gctx.arc(x,y,3,0,7); gctx.fillStyle=line; gctx.fill();
+    const tx=x+U[0]*26*s, ty=y+U[1]*26*s;
+    gctx.beginPath(); gctx.moveTo(x,y); gctx.lineTo(tx,ty); stroke(1.5,line);
+    gctx.beginPath(); gctx.moveTo(tx,ty); gctx.lineTo(tx+16*s,ty+(-U[1])*-4*s+U[1]*-4*s); gctx.lineTo(tx-U[0]*9*s,ty-U[1]*9*s); gctx.closePath(); gctx.fillStyle='rgba(255,246,232,0.5)'; gctx.fill(); stroke(1.2,line);
+    return;
+  }
+  for(const pc of gesturePieces(g)){
+    const [hx,hy]=pieceExt(pc.kind,pc.sc);
+    gctx.save(); gctx.translate(pc.x*cs,pc.y*cs); gctx.rotate(pc.ang);
+    gctx.beginPath();
+    if(PIECES[pc.kind].round) gctx.arc(0,0,hx,0,Math.PI*2);
+    else if(pc.kind==='keep'){ const R=hx/1.02; gctx.roundRect ? gctx.roundRect(-R,-R,2*R,2*R,R*0.3) : gctx.rect(-R,-R,2*R,2*R); }
+    else gctx.rect(-hx,-hy,2*hx,2*hy);
+    gctx.fillStyle=fill; gctx.fill(); stroke(1.6,line,[5,4]);
+    gctx.beginPath();
+    if(pc.kind==='tower'){ gctx.arc(0,0,hx*0.86*0.68,0,Math.PI*2); }
+    else if(pc.kind==='spire'){ gctx.arc(0,0,hx*0.55,0,Math.PI*2); gctx.moveTo(hx*0.22,0); gctx.arc(0,0,hx*0.22,0,Math.PI*2); }
+    else if(pc.kind==='wall'){ const per=pc.o.per; for(let x=-hx;x<hx;x+=1){ const f=(((x+pc.o.phase)/per)%1+1)%1, f2=(((x+1+pc.o.phase)/per)%1+1)%1; if((f<0.55)!==(f2<0.55)){ gctx.moveTo(x+1,-hy*0.8); gctx.lineTo(x+1,hy*0.8); } } }
+    else if(pc.kind==='level'){ const e=hx-5.8*pc.sc; gctx.rect(-e,-e,2*e,2*e); }
+    else if(pc.kind==='stairs'){ for(let k=1;k<4;k++){ const x=-hx+2*hx*k/4; gctx.moveTo(x,-hy+2*pc.sc); gctx.lineTo(x,hy-2*pc.sc); } gctx.moveTo(hx*0.55,-hy*0.45); gctx.lineTo(hx*0.85,0); gctx.lineTo(hx*0.55,hy*0.45); }
+    else if(pc.kind==='keep'){ const R=hx/1.02; gctx.arc(0,-0.04*R,0.32*R,0,7); for(const [cx2,cy2] of [[-1,-1],[1,-1],[-1,1],[1,1]]){ gctx.moveTo(cx2*0.72*R+0.26*R,cy2*0.72*R); gctx.arc(cx2*0.72*R,cy2*0.72*R,0.26*R,0,7); } }
+    stroke(1.1,soft);
+    gctx.restore();
+  }
+}
+
+/* ---- thumbnails: little relief renders of each piece, and the start screen cards ---- */
+// Shade a heightfield onto a canvas. sample(x,y) -> [height px, r,g,b (sRGB 0..1), water level px or -1]; lamp from the upper left
+function shadeHF(cvs, W, H, sample, opt){
+  opt=opt||{}; cvs.width=W; cvs.height=H; const ctx=cvs.getContext('2d'), img=ctx.createImageData(W,H), D=img.data;
+  const hh=new Float32Array(W*H), col=new Float32Array(W*H*3), wl=new Float32Array(W*H);
+  for(let y=0;y<H;y++) for(let x=0;x<W;x++){ const s=sample(x,y), i=y*W+x; hh[i]=s[0]; col[i*3]=s[1]; col[i*3+1]=s[2]; col[i*3+2]=s[3]; wl[i]=s[4]; }
+  const L=[-0.55,-0.62,0.56], ll=Math.hypot(...L); L.forEach((v,i)=>L[i]=v/ll);
+  const step=1/Math.hypot(L[0],L[1]), rise=L[2]*step;
+  for(let y=0;y<H;y++) for(let x=0;x<W;x++){
+    const i=y*W+x;
+    if(opt.alphaBg && hh[i]<=0.01){
+      // transparent background, with the piece's shadow
+      let sh=0; for(let t=1;t<60;t++){ const qx=Math.round(x+L[0]*step*t), qy=Math.round(y+L[1]*step*t);
+        if(qx<0||qy<0||qx>=W||qy>=H) break; if(hh[qy*W+qx]>rise*t){ sh=1; break; } }
+      D[i*4+3]=sh?95:0; continue;
+    }
+    const hx=(hh[y*W+Math.min(W-1,x+1)]-hh[y*W+Math.max(0,x-1)])*0.5, hy=(hh[Math.min(H-1,y+1)*W+x]-hh[Math.max(0,y-1)*W+x])*0.5;
+    const n=[-hx,-hy,1], nl=Math.hypot(...n); const ndl=Math.max(0,(n[0]*L[0]+n[1]*L[1]+n[2]*L[2])/nl);
+    let sh=1; for(let t=1;t<80;t++){ const qx=Math.round(x+L[0]*step*t), qy=Math.round(y+L[1]*step*t); if(qx<0||qy<0||qx>=W||qy>=H) break; if(hh[qy*W+qx]>hh[i]+rise*t+0.3){ sh=0.35; break; } }
+    const g=0.9+0.2*Math.random();
+    let r=col[i*3]*g, gg=col[i*3+1]*g, b=col[i*3+2]*g;
+    let lum=(0.32+1.05*ndl*sh);
+    r*=lum; gg*=lum; b*=lum;
+    if(wl[i]>hh[i]){ const dep=Math.min(1,(wl[i]-hh[i])/6); r=r*(1-0.55*dep)+0.16*dep; gg=gg*(1-0.48*dep)+0.25*dep; b=b*(1-0.4*dep)+0.29*dep;
+      if(Math.random()<0.004) { r=gg=b=1; } }
+    D[i*4]=Math.min(255,r*255); D[i*4+1]=Math.min(255,gg*255); D[i*4+2]=Math.min(255,b*255); D[i*4+3]=255;
+  }
+  ctx.putImageData(img,0,0);
+  return ctx;
+}
+const SAND=[0.80,0.69,0.54], PACKED=[0.70,0.58,0.45];
+function renderPieceThumbs(){
+  rTiles.querySelectorAll('.ptile').forEach(t=>{
+    const k=t.dataset.kind, cv=t.querySelector('canvas'), W=92;
+    if(k==='flag'){
+      const c=cv.getContext('2d'); c.clearRect(0,0,W,W);
+      c.fillStyle='rgba(0,0,0,0.28)'; c.beginPath(); c.moveTo(40,74); c.lineTo(70,86); c.lineTo(80,74); c.lineTo(62,66); c.closePath(); c.fill();
+      c.strokeStyle='#d9b98a'; c.lineWidth=3; c.lineCap='round'; c.beginPath(); c.moveTo(34,80); c.lineTo(34,12); c.stroke();
+      const gr=c.createLinearGradient(34,0,78,0); gr.addColorStop(0,'#c22f22'); gr.addColorStop(0.5,'#e2483a'); gr.addColorStop(1,'#a8261b');
+      c.fillStyle=gr; c.beginPath(); c.moveTo(35,14); c.bezierCurveTo(48,8,58,22,76,16); c.lineTo(76,40); c.bezierCurveTo(58,46,48,32,35,40); c.closePath(); c.fill();
+      return;
+    }
+    if(k==='moat'){
+      // an island inside a ring of water, with a packed bank around it
+      shadeHF(cv,W,W,(x,y)=>{ const r=Math.hypot(x-46,y-46); if(r>40) return [0,0,0,0,-1];
+        const ch=Math.abs(r-27); const h= ch<8 ? 3+(ch/8)**2*9 : 12+Math.min(3,(r<27?(19-r):(r-35))*0.5)*0; return [Math.max(h,0.5),...PACKED, 9]; },{alphaBg:true});
+      return;
+    }
+    const sc={tower:1.45,spire:2.0,wall:1.3,level:0.78,stairs:1.45}[k]||1, o=pieceOpts(k); o.phase=29*sc; o.per=13*sc;
+    const ang=k==='wall'||k==='stairs'?-0.5:k==='level'?0.25:0;
+    const c=Math.cos(ang), s=Math.sin(ang), h0=11;
+    shadeHF(cv,W,W,(x,y)=>{ const px=(x-46), py=(y-46); const lx=c*px+s*py, ly=-s*px+c*py;
+      const h=k==='keep' ? (()=>{ const R=40; const H=castleProfile(lx/R,ly/R,16)-1; return H>0.02?H:0; })() : pieceH(k,lx,ly,sc,o);
+      return [h*h0,...PACKED,-1]; },{alphaBg:true});
+  });
+}
+function renderModeCards(){
+  document.querySelectorAll('.mcard').forEach(card=>{
+    const cv=card.querySelector('canvas'), W=Math.round(Math.min(300,card.clientWidth||300)*Math.min(DPR,2)), H=Math.round(150*Math.min(DPR,2)), s=W/600;
+    const m=card.dataset.mode;
+    if(m==='zen'){
+      const stones=[[0.30,0.42,52,38,0.4,[0.40,0.40,0.39]],[0.43,0.62,40,30,-0.6,[0.33,0.33,0.33]],[0.74,0.38,34,26,0.2,[0.45,0.44,0.42]]];
+      shadeHF(cv,W,H,(x,y)=>{
+        for(const [cx,cy,rx,ry,a,cl] of stones){ const dx=(x-cx*W)/s, dy=(y-cy*H)/s, ca=Math.cos(a), sa=Math.sin(a), u=(ca*dx+sa*dy)/rx, v=(-sa*dx+ca*dy)/ry, e=u*u+v*v;
+          if(e<1) return [16+30*Math.pow(1-e,0.55),...cl,-1]; }
+        // grooves raked in rings around the stones, straight lines elsewhere
+        let dmin=1e9; for(const [cx,cy,rx,ry] of stones){ const r=Math.hypot((x-cx*W)/s,(y-cy*H)/s)-(rx+ry)*0.5; dmin=Math.min(dmin,r); }
+        const ph= dmin<70 ? dmin : y/s;
+        return [12+3.2*Math.cos(ph*2*Math.PI/13),...SAND,-1];
+      });
+    } else {
+      const lvl=(x,y)=>{ const dx=Math.abs(x/s-300), dy=Math.abs(y/s-150); return dx<80&&dy<55; };
+      shadeHF(cv,W,H,(x,y)=>{
+        const X=x/s, Y=y/s, o={seed:3,phase:0,per:14};
+        let h=0, mo=Math.hypot((X-300)/1.55,(Y-150))-104;
+        // moat ring with water, sand outside
+        const ch=Math.abs(mo); let ground = ch<12 ? 3+(ch/12)**2*9 : 13+(ch<16?(16-ch)*0.6:0);
+        // level, walls and towers
+        let p=0;
+        const dx=X-300, dy=Y-150;
+        if(Math.abs(dx)<92&&Math.abs(dy)<62){ p=Math.max(p,pieceH('level',dx*40/92,dy*40/62,1,o)); }
+        for(const [tx,ty] of [[-92,-62],[92,-62],[-92,62],[92,62]]){ p=Math.max(p, pieceH('tower',dx-tx,dy-ty,1.05,o)+(pieceH('tower',dx-tx,dy-ty,1.05,o)>0?1.2:0)); }
+        { const wv=pieceH('wall',dx,(dy-Math.sign(dy)*56)*2.4,3.1,o); if(wv>0) p=Math.max(p, wv+1.2); }
+        p=Math.max(p, pieceH('tower',dx,dy,1.25,o)>0 ? pieceH('tower',dx,dy,1.25,o)+1.2 : 0);
+        h=ground+p*12;
+        return [h,...(p>0?PACKED:SAND), p>0?-1:9];
+      });
+      // flags on the corner towers
+      const c=cv.getContext('2d'); c.save(); c.scale(s,s);
+      for(const [tx,ty,cl] of [[300-92,150-62,'#c8352a'],[300+92,150-62,'#2c55b6'],[300,150,'#e8b52a'],[300-92,150+62,'#2c55b6'],[300+92,150+62,'#c8352a']]){
+        c.fillStyle='rgba(0,0,0,0.3)'; c.beginPath(); c.moveTo(tx,ty); c.lineTo(tx+24,ty+26); c.lineTo(tx+40,ty+22); c.lineTo(tx+24,ty+12); c.closePath(); c.fill();
+        c.strokeStyle='#dcc196'; c.lineWidth=2.4; c.beginPath(); c.moveTo(tx,ty); c.lineTo(tx,ty-30); c.stroke();
+        c.fillStyle=cl; c.beginPath(); c.moveTo(tx+1,ty-30); c.quadraticCurveTo(tx+12,ty-34,tx+22,ty-28); c.lineTo(tx+22,ty-17); c.quadraticCurveTo(tx+12,ty-22,tx+1,ty-18); c.closePath(); c.fill();
+      }
+      c.restore();
+    }
+  });
+}
+
+/* ---- the start screen and switching modes ---- */
+const modesEl=$('#modes'), btnHome=$('#btnHome'), mNote=$('#mNote'), mClose=$('#mClose');
+function showModes(on){
+  if(on){
+    modesEl.hidden=false; modesEl.classList.remove('gone');
+    modesEl.querySelectorAll('.mcard').forEach(c=>{ const cur=c.dataset.mode===mode; c.querySelector('i').hidden=!cur; });
+    mNote.textContent = mode ? 'Switching modes starts you on a fresh tray.' : '';
+    mClose.hidden=!mode;
+    if(ribbonOpen) openRibbon(false); if(menuOpen) openMenu(false); setCastleMode(false);
+    if(mode){ const cur=modesEl.querySelector(`.mcard[data-mode="${mode}"]`); cur && cur.focus({preventScroll:true}); }
+  } else {
+    modesEl.classList.add('gone'); setTimeout(()=>{ if(modesEl.classList.contains('gone')) modesEl.hidden=true; },360);
+  }
+}
+modesEl.querySelectorAll('.mcard').forEach(c=>c.addEventListener('click',()=>{
+  firstInteraction(); if(isTouch) requestMotionPermission();
+  const m=c.dataset.mode;
+  if(m===mode){ showModes(false); return; }
+  applyMode(m,'start_screen');
+}));
+mClose.addEventListener('click',()=>showModes(false));
+btnHome.addEventListener('click',()=>{ noteInteraction(); showModes(true); });
+addEventListener('keydown',e=>{ if(e.key==='Escape' && mode && !modesEl.hidden && !modesEl.classList.contains('gone')) showModes(false); });
+function applyMode(m, via){
+  const prev=mode; mode=m;
+  document.body.classList.toggle('mode-castle',m==='castle'); document.body.classList.toggle('mode-zen',m==='zen');
+  btnHome.hidden=false;
+  if(menuOpen) openMenu(false); if(ribbonOpen) openRibbon(false); setCastleMode(false);
+  // a fresh tray: new sand, no garden items, castles, flags or water
+  items=[]; itemDrags.clear(); undoSnap=null; hideUndo(); updateGardenUI();
+  resetTray();
+  if(m==='castle'){
+    btnCastle.title='Castle: open the castle pieces'; btnCastle.removeAttribute('aria-pressed'); btnCastle.setAttribute('aria-expanded','false'); btnCastle.setAttribute('aria-controls','ribbon');
+    hint.textContent = isTouch ? 'Tap Castle to start building' : 'Click Castle to start building. Arrow keys tilt, Space shakes.';
+  } else {
+    btnCastle.title='Castle: tap here, then tap the sand to build one'; btnCastle.removeAttribute('aria-expanded'); btnCastle.removeAttribute('aria-controls'); btnCastle.setAttribute('aria-pressed','false');
+    hint.textContent = isTouch ? 'Draw with your finger. Tilt or shake your phone.' : 'Drag to draw. Arrow keys or the tilt pad tilt the tray. Space shakes it.';
+  }
+  hint.classList.remove('gone'); clearTimeout(applyMode.t); applyMode.t=setTimeout(()=>{ if(!castleMode) hint.classList.add('gone'); },5000);
+  analytics.track('mode_selected', {mode:m, from:prev||'start', via:via||'start_screen'});
+  showModes(false);
+}
+// builder state that lives in the sand grid: clear it, or carry it over when the grid is resized
+function clearBuilder(){ flags=[]; undoStack.length=0; updateUndoBtn(); clearWater(); placing=null; ghostDirty=true; }
+function builderGridChanged(old, kept){
+  undoStack.length=0; updateUndoBtn();
+  const oldW=waterM, oN=[old.NX,old.NY];
+  waterM=new Float32Array(NX*NY*4); for(let i=0;i<NX*NY;i++) waterM[i*4+1]=1e9;
+  if(kept && oN[0]>0 && oldW.length===oN[0]*oN[1]*4){
+    for(let y=0;y<NY;y++) for(let x=0;x<NX;x++){ const ox=Math.min(oN[0]-1,Math.floor((x+0.5)*oN[0]/NX)), oy=Math.min(oN[1]-1,Math.floor((y+0.5)*oN[1]/NY)); const i=(y*NX+x)*4, j=(oy*oN[0]+ox)*4; waterM[i]=oldW[j]; waterM[i+1]=oldW[j+1]; }
+    if(waterAny) waterBodies();
+    for(const f of flags){ f.x*=NX/oN[0]; f.y*=NY/oN[1]; f.zb*=old.cs/cs; f.gh=null; }
+  } else { flags=[]; waterAny=false; }
+  uploadWater();
+}
+function resetTray(){
+  const data=initialHeights(NX,NY,cs);
+  gl.bindTexture(gl.TEXTURE_2D,A[0]); gl.texSubImage2D(gl.TEXTURE_2D,0,0,0,NX,NY,gl.RGBA,gl.FLOAT,data);
+  gl.bindTexture(gl.TEXTURE_2D,B[0]); gl.texSubImage2D(gl.TEXTURE_2D,0,0,0,NX,NY,gl.RGBA,gl.FLOAT,new Float32Array(NX*NY*4));
+  np=0; castlesAny=false; setCastleMode(false);
+  clearBuilder();
+}
+
+/* ------------------------------------------------------------------ */
 /* UI                                                                  */
 /* ------------------------------------------------------------------ */
 const hint=$('#hint'), toastEl=$('#toast');
@@ -2317,12 +3333,7 @@ btnTilt.addEventListener('click',()=>{
 });
 btnSound.addEventListener('click',()=>{ soundOn=!soundOn; btnSound.classList.toggle('on',soundOn); $('#sndWave').style.opacity=soundOn?1:0.15; if(soundOn) initAudio(); });
 btnSound.classList.toggle('on',soundOn);
-$('#btnReset').addEventListener('click',()=>{
-  const data=initialHeights(NX,NY,cs);
-  gl.bindTexture(gl.TEXTURE_2D,A[0]); gl.texSubImage2D(gl.TEXTURE_2D,0,0,0,NX,NY,gl.RGBA,gl.FLOAT,data);
-  gl.bindTexture(gl.TEXTURE_2D,B[0]); gl.texSubImage2D(gl.TEXTURE_2D,0,0,0,NX,NY,gl.RGBA,gl.FLOAT,new Float32Array(NX*NY*4));
-  np=0; castlesAny=false; setCastleMode(false);
-});
+$('#btnReset').addEventListener('click',()=>{ noteInteraction(); resetTray(); });
 updateTiltBtn();
 if(isTouch && !(window.DeviceMotionEvent && typeof DeviceMotionEvent.requestPermission==='function')){ motion.asked=true; listenMotion(); }
 
@@ -2352,6 +3363,15 @@ window.__sand = {
   mapping(){ return {angle,R0,R1,ROFF,vw,vh,natW,natH}; },
   castle(x,y){ return buildCastle(x,y); }, place(x,y){ return placeCastle(x,y); }, castleR:()=>castleR(), castleVolume:()=>castleVolume(),
   setCastleMode:on=>setCastleMode(on), get castleMode(){ return castleMode; }, shake(t){ shakeT=t||0.6; },
+  builder:{
+    mode:m=>applyMode(m,'api'), get modeName(){ return mode; }, open(on){ openRibbon(on!==false); }, select(k){ selectPiece(k); },
+    place(kind,x,y,o){ o=o||{}; const g={kind, start:[x,y], cur:[o.x2??x,o.y2??y], path:o.path||[[x,y]].concat(o.x2!=null?[[o.x2,o.y2]]:[]), size:o.size||1}; if(o.ang!=null) selAng[kind]=o.ang; commitGesture(g); },
+    gesture:g=>gesturePieces(g), flag(x,y){ plantFlag(x,y); }, get flags(){ return flags; }, undo(){ undoLast(); }, get undoN(){ return undoStack.length; },
+    moat(path){ pushUndo(); const pt=newPointer(path[0][0],path[0][1],'moat'); pt.moat={cells:new Set(), start:path[0].slice()}; pointers.set('moat',pt); for(let i=0;i<10;i++) simFrame(1/60);
+      for(let i=1;i<path.length;i++){ pt.x=path[i][0]; pt.y=path[i][1]; simFrame(1/60); } for(let i=0;i<8;i++) simFrame(1/60); pointers.delete('moat'); finishMoat(pt); },
+    get water(){ return {any:waterAny, slope:wS.slice(), wl:cells.wl}; }, readW(){ return waterM; }, readB(){ return readTex(fB[0]); },
+    showModes(on){ showModes(on!==false); },
+  },
   garden:{
     add(kind,x,y,how){ return addItem(kind,x,y,how||'api'); }, get items(){ return items; }, KINDS,
     menu(on){ openMenu(on!==false); }, get variant(){ return analytics.variant; }, get events(){ return analytics.log; },
@@ -2361,6 +3381,11 @@ window.__sand = {
 
 setup(false);
 renderThumbs();
+clearWater();
+renderPieceThumbs();
+{ const hm=(location.hash.match(/mode=(zen|castle)/)||[])[1];
+  if(hm) applyMode(hm,'link'); else showModes(true); }
+setTimeout(renderModeCards, 30);
 let last=performance.now(), simTime=0, frameN=0, flowLevel=0, massInfo=[0,0];
 let ema=16.7, lastQualityChange=performance.now();
 let Rf=[0,0,9.81], Rlow=[0,0,9.81], shake=0;
@@ -2386,7 +3411,7 @@ function frame(now){
   if(L[2]<0.12){ L[2]=0.12; }
 
   // ---- render prep ----
-  run(progs.surf, fSurfA, u=>{ gl.uniform2i(u.uN,NX,NY); bindTex(progs.surf,'uA',0,A[0]); });
+  run(progs.surf, fSurfA, u=>{ gl.uniform2i(u.uN,NX,NY); bindTex(progs.surf,'uA',0,A[0]); bindTex(progs.surf,'uB',1,B[0]); gl.uniform1f(u.uTime,simTime); gl.uniform1f(u.uH0,cells.h0); });
   gl.bindTexture(gl.TEXTURE_2D,SurfA); gl.generateMipmap(gl.TEXTURE_2D);
   const objOn=buildObj();
   run(progs.light, fSurfB, u=>{ gl.uniform2i(u.uN,NX,NY); bindTex(progs.light,'uS',0,SurfA); gl.uniform3f(u.uL,L[0],L[1],L[2]); gl.uniform1f(u.uWall,0.0);
@@ -2403,10 +3428,16 @@ function frame(now){
     gl.uniform1f(u.uCs,cs); gl.uniform1f(u.uGS, LOOK.grainScale); gl.uniform1f(u.uGT,GT);
     gl.uniform3f(u.uL,L[0],L[1],L[2]); gl.uniform1f(u.uTime,simTime); gl.uniform1f(u.uExposure,LOOK.exposure);
     gl.uniform3fv(u.uSun,LOOK.sun); gl.uniform3fv(u.uSky,LOOK.sky);
+    bindTex(progs.final,'uW',6,WatT); gl.uniform1i(u.uHasW,waterAny?1:0);
+    gl.uniform1f(u.uWl,cells.wl); gl.uniform2f(u.uWS,wS[0],wS[1]); gl.uniform1f(u.uH0c,cells.h0);
+    gl.uniform1f(u.uWRip,0.35+Math.min(2.5,shake*4+Math.hypot(wSv[0],wSv[1])*1.5));
   });
 
-  // ---- garden items ----
+  // ---- garden items, flags ----
   drawItems(L,px);
+  drawFlags(L);
+  drawGhost();
+  probeFlags();
 
   // ---- particles ----
   if(np>0){
@@ -2469,6 +3500,7 @@ function simFrame(dt){
   // ---- tools ----
   buildTools(dt);
   gardenStep(dt);
+  flushWater(); stepWater(dt); stepFlags(dt);
   run(progs.tool, fTool, u=>{
     gl.uniform2i(u.uN,NX,NY); gl.uniform1i(u.uSegN,segN);
     gl.uniform4fv(u.uSegA,segA); gl.uniform4fv(u.uSegB,segB); gl.uniform4fv(u.uSegC,segC);
@@ -2481,6 +3513,7 @@ function simFrame(dt){
       gl.uniform2i(u.uN,NX,NY); bindTex(progs.pack,'uA',0,A[0]); bindTex(progs.pack,'uTool',1,ToolT);
       gl.uniform1f(u.uDt,dt); gl.uniform1f(u.uH0,cells.h0); gl.uniform1f(u.uShake,Math.max(0,shake-0.12)); gl.uniform1f(u.uTilt,tilt);
       gl.uniform1f(u.uSeed,(simTime*3.7)%53.); gl.uniform2f(u.uDown,down[0],down[1]);
+      bindTex(progs.pack,'uW',2,WatT); gl.uniform1i(u.uHasW,waterAny?1:0); gl.uniform1f(u.uTime,simTime); gl.uniform1f(u.uRemnant,mode==='castle'?0:1);
     });
     A.reverse(); fA.reverse();
   }
