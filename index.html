@@ -126,6 +126,30 @@ body.ribbon #pad{bottom:calc(196px + env(safe-area-inset-bottom,0px));}
 #mTip svg{width:15px;height:15px;stroke:currentColor;fill:none;stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round;}
 #mTip:hover,#mTip:focus-visible{color:var(--accent);background:rgba(240,200,140,.1);outline:none;}
 #mTip[hidden]{display:none;}
+/* Feedback: a quiet link on the start screen opens a small form; answers go to a PostHog survey */
+#modes .mlinks{display:flex;flex-wrap:wrap;justify-content:center;gap:2px 6px;}
+#mFb{appearance:none;border:0;background:transparent;display:inline-flex;align-items:center;gap:6px;margin-top:2px;padding:8px 12px;border-radius:999px;font:500 12.5px/1 var(--font);color:var(--ink-dim);cursor:pointer;touch-action:manipulation;transition:color .2s,background .2s;}
+#mFb svg{width:15px;height:15px;stroke:currentColor;fill:none;stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round;}
+#mFb:hover,#mFb:focus-visible{color:var(--accent);background:rgba(240,200,140,.1);outline:none;}
+#fb{position:fixed;inset:0;z-index:30;display:flex;align-items:center;justify-content:center;padding:calc(16px + env(safe-area-inset-top,0px)) 16px calc(16px + env(safe-area-inset-bottom,0px));box-sizing:border-box;background:rgba(14,11,8,.5);}
+#fb[hidden]{display:none;}
+#fb form{width:100%;max-width:400px;max-height:100%;overflow-y:auto;box-sizing:border-box;display:flex;flex-direction:column;gap:12px;padding:20px;border-radius:22px;border:1px solid var(--line);background:var(--glass-hi);-webkit-backdrop-filter:blur(22px) saturate(1.3);backdrop-filter:blur(22px) saturate(1.3);box-shadow:0 14px 40px rgba(0,0,0,.45);-webkit-user-select:text;user-select:text;touch-action:auto;}
+#fb h2{margin:0;font:700 18px/1.2 var(--font);}
+#fb .fkind{display:flex;gap:6px;border:0;margin:0;padding:0;}
+#fb .fkind label{flex:1;display:flex;align-items:center;justify-content:center;gap:6px;padding:10px 8px;border-radius:12px;border:1px solid var(--line);font:600 13px/1.2 var(--font);color:var(--ink-dim);cursor:pointer;text-align:center;}
+#fb .fkind input{position:absolute;opacity:0;pointer-events:none;}
+#fb .fkind label:has(input:checked){background:rgba(240,200,140,.18);border-color:rgba(240,200,140,.55);color:var(--accent);}
+#fb .fkind label:has(input:focus-visible){outline:2px solid var(--accent);outline-offset:1px;}
+#fb textarea,#fb input[type=email]{width:100%;box-sizing:border-box;padding:10px 12px;border-radius:12px;border:1px solid var(--line);background:rgba(10,8,6,.4);color:var(--ink);font:500 16px/1.4 var(--font);}
+#fb textarea{min-height:110px;resize:vertical;}
+#fb textarea:focus,#fb input[type=email]:focus{outline:none;border-color:rgba(240,200,140,.6);}
+#fb ::placeholder{color:rgba(247,239,227,.4);}
+#fb .fnote{margin:-4px 0 0;font:500 11.5px/1.4 var(--font);color:var(--ink-dim);}
+#fb .fstatus{margin:0;min-height:16px;font:500 12.5px/1.4 var(--font);color:var(--accent);}
+#fb .fbtns{display:flex;gap:8px;justify-content:flex-end;}
+#fb .fbtns button{appearance:none;border:1px solid var(--line);background:transparent;color:var(--ink);font:600 13px/1 var(--font);padding:11px 18px;border-radius:999px;cursor:pointer;touch-action:manipulation;}
+#fb .fbtns button[type=submit]{background:var(--accent);border-color:var(--accent);color:#2a1f14;}
+#fb .fbtns button:disabled{opacity:.5;cursor:default;}
 @media (max-height:620px){.mcard canvas{height:96px}#modes h1{font-size:24px}#modes{gap:12px}}
 @media (prefers-reduced-motion:reduce){#ribbon,#modes{transition:none}}
 </style>
@@ -187,7 +211,24 @@ body.ribbon #pad{bottom:calc(196px + env(safe-area-inset-bottom,0px));}
   </div>
   <p class="mnote" id="mNote"></p>
   <button id="mClose" hidden>Back to my tray</button>
-  <a id="mTip" hidden target="_blank" rel="noopener"><svg viewBox="0 0 24 24"><path d="M5 9h11v5a5 5 0 0 1-5 5h-1a5 5 0 0 1-5-5z"/><path d="M16 10.5h1.5a2.5 2.5 0 0 1 0 5H16"/><path d="M9 3.5c-.6.8.6 1.6 0 2.5M12.5 3.5c-.6.8.6 1.6 0 2.5"/></svg>Enjoying Sandtray? Buy me a coffee</a>
+  <div class="mlinks">
+    <a id="mTip" hidden target="_blank" rel="noopener"><svg viewBox="0 0 24 24"><path d="M5 9h11v5a5 5 0 0 1-5 5h-1a5 5 0 0 1-5-5z"/><path d="M16 10.5h1.5a2.5 2.5 0 0 1 0 5H16"/><path d="M9 3.5c-.6.8.6 1.6 0 2.5M12.5 3.5c-.6.8.6 1.6 0 2.5"/></svg>Enjoying Sandtray? Buy me a coffee</a>
+    <button id="mFb" type="button"><svg viewBox="0 0 24 24"><path d="M4 5.5h16v10H9.5L5 19.5v-4H4z"/><path d="M8 9.5h8M8 12.5h5"/></svg>Send feedback</button>
+  </div>
+</div>
+<div id="fb" role="dialog" aria-modal="true" aria-labelledby="fbTitle" hidden>
+  <form novalidate>
+    <h2 id="fbTitle">Send feedback</h2>
+    <fieldset class="fkind" aria-label="What kind of feedback?">
+      <label><input type="radio" name="kind" value="Something went wrong" checked>Report a problem</label>
+      <label><input type="radio" name="kind" value="Idea or feature request">I have an idea</label>
+    </fieldset>
+    <textarea id="fbText" maxlength="2000" aria-label="Tell us more" placeholder="What happened? What did you expect?"></textarea>
+    <input id="fbEmail" type="email" maxlength="200" autocomplete="email" aria-label="Email, optional" placeholder="Email, if you'd like a reply (optional)">
+    <p class="fnote">Your device type and current mode are sent along to help fix things.</p>
+    <p class="fstatus" id="fbStatus" role="status"></p>
+    <div class="fbtns"><button type="button" id="fbCancel">Cancel</button><button type="submit" id="fbSend">Send</button></div>
+  </form>
 </div>
 <div id="undo" role="status" hidden><span>Cleared</span><button><svg viewBox="0 0 24 24"><path d="M9 14L4 9l5-5"/><path d="M4 9h10a6 6 0 0 1 0 12h-3"/></svg>Undo</button></div>
 <script>
@@ -2088,7 +2129,19 @@ const analytics = (() => {
     if(DEBUG) console.log('[analytics]', event, p);
     if(on){ try{ window.posthog.capture(event, p); }catch(e){} }
   }
-  return { track, variant, log, get on(){ return on; } };
+  // Send one event straight to PostHog and resolve true/false, so a form can tell the player
+  // whether it arrived. Used for feedback, which the player sends on purpose, so it also
+  // works when tracking is otherwise off (Do Not Track) — then with a one-off random id.
+  function send(event, props){
+    log.push([event, props]); if(log.length>200) log.shift();
+    if(!ANALYTICS.key) return Promise.resolve(false);
+    const id = on ? uid : 'anon-' + (crypto.randomUUID ? crypto.randomUUID() : Math.random().toString(36).slice(2));
+    return fetch(ANALYTICS.host + '/i/v0/e/', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' }, keepalive: true,
+      body: JSON.stringify({ api_key: ANALYTICS.key, event, distinct_id: id, properties: Object.assign({ $lib: 'sandtray', $current_url: location.href, $process_person_profile: false }, props), timestamp: new Date().toISOString() }),
+    }).then(r => r.ok, () => false);
+  }
+  return { track, send, variant, log, get on(){ return on; } };
 })();
 
 /* Engagement: interactions, and what happens in the minute after the garden is cleared */
@@ -3320,6 +3373,60 @@ if(TIP_URL){
   mTip.href=TIP_URL; mTip.hidden=false;
   mTip.addEventListener('click',()=>analytics.track('tip_click', { mode: mode||null, session_s: Math.round((performance.now()-sessionStart)/1000) }));
 }
+// Feedback: answers go to the PostHog survey "Sandtray feedback" (type api), read them under Surveys.
+// The ids below must match that survey's questions; empty FEEDBACK_SURVEY hides the link.
+const FEEDBACK_SURVEY = { id: '01a1dc01-66f1-0000-16b4-5c019116543b',
+  q: { kind: '76a3913e-aa9e-4bb7-9caa-0f81f0e705ef', text: '7f1a3f41-d572-4b33-b184-d0ef2c351cdf', email: 'd15f4777-8480-42ca-a90d-144e947eca25' } };
+const mFb=$('#mFb'), fbEl=$('#fb'), fbForm=fbEl.querySelector('form'), fbText=$('#fbText'), fbEmail=$('#fbEmail'), fbStatus=$('#fbStatus'), fbSend=$('#fbSend');
+let fbSub=null;
+function fbContext(){
+  const ua=navigator.userAgent;
+  const os = isIOS ? 'iOS' : /Android/.test(ua) ? 'Android' : /Mac/.test(ua) ? 'macOS' : /Win/.test(ua) ? 'Windows' : /CrOS/.test(ua) ? 'ChromeOS' : /Linux/.test(ua) ? 'Linux' : 'other';
+  const browser = /Edg\//.test(ua) ? 'Edge' : /SamsungBrowser/.test(ua) ? 'Samsung' : /Firefox|FxiOS/.test(ua) ? 'Firefox' : /Chrome|CriOS/.test(ua) ? 'Chrome' : /Safari/.test(ua) ? 'Safari' : 'other';
+  const small=Math.min(screen.width,screen.height);
+  return { mode: mode||null, device: !isTouch ? 'desktop' : small<600 ? 'phone' : 'tablet', os, browser,
+    screen: innerWidth+'x'+innerHeight+'@'+DPR, tilt: !!(motion.gotOrient||motion.gotMotion), quality: qi,
+    session_s: Math.round((performance.now()-sessionStart)/1000), app_version: 'modes-1', user_agent: ua.slice(0,300) };
+}
+function openFeedback(on){
+  if(on){
+    fbSub = crypto.randomUUID ? crypto.randomUUID() : Date.now().toString(36)+Math.random().toString(36).slice(2);
+    clearTimeout(openFeedback.t); fbStatus.textContent=''; fbSend.disabled=false; fbEl.hidden=false;
+    setTimeout(()=>fbText.focus({preventScroll:true}),30);
+    analytics.track('feedback_opened', { mode: mode||null });
+  } else { fbEl.hidden=true; mFb.focus({preventScroll:true}); }
+}
+if(!FEEDBACK_SURVEY.id) mFb.hidden=true;
+mFb.addEventListener('click',()=>openFeedback(true));
+$('#fbCancel').addEventListener('click',()=>openFeedback(false));
+fbEl.addEventListener('click',e=>{ if(e.target===fbEl) openFeedback(false); });
+// typing in the form must not tilt or shake the tray, and Escape closes only the form
+addEventListener('keydown',e=>{
+  if(fbEl.hidden) return;
+  if(e.key==='Escape') openFeedback(false);
+  e.stopImmediatePropagation();
+}, true);
+fbForm.addEventListener('submit',async e=>{
+  e.preventDefault();
+  const text=fbText.value.trim(), email=fbEmail.value.trim(), kind=fbForm.kind.value;
+  if(!text){ fbStatus.textContent='Please write a few words first.'; fbText.focus(); return; }
+  if(email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)){ fbStatus.textContent='That email doesn\'t look right. Leave it empty if you prefer.'; fbEmail.focus(); return; }
+  fbSend.disabled=true; fbStatus.textContent='Sending…';
+  const S=FEEDBACK_SURVEY, props=Object.assign({
+    $survey_id: S.id, $survey_submission_id: fbSub, $survey_completed: true,
+    $survey_questions: [{id:S.q.kind, question:'What kind of feedback?'}, {id:S.q.text, question:'Tell us more'}, {id:S.q.email, question:"Email (optional, if you'd like a reply)"}],
+    ['$survey_response_'+S.q.kind]: kind, ['$survey_response_'+S.q.text]: text,
+    feedback_kind: kind==='Something went wrong' ? 'problem' : 'idea',
+  }, email ? {['$survey_response_'+S.q.email]: email} : {}, fbContext());
+  const ok = await analytics.send('survey sent', props);
+  if(ok){
+    fbText.value=''; fbEmail.value='';
+    fbStatus.textContent = kind==='Something went wrong' ? 'Thanks. Sorry about that, we\'ll take a look.' : 'Thanks for the idea!';
+    openFeedback.t=setTimeout(()=>{ if(!fbEl.hidden) openFeedback(false); }, 1800);
+  } else {
+    fbSend.disabled=false; fbStatus.textContent='Couldn\'t send. Check your connection (or an ad blocker) and try again.';
+  }
+});
 function showModes(on){
   if(on){
     modesEl.hidden=false; modesEl.classList.remove('gone');
