@@ -121,6 +121,11 @@ body.ribbon #pad{bottom:calc(196px + env(safe-area-inset-bottom,0px));}
 #modes .mnote{font:500 12px/1.4 var(--font);color:var(--ink-dim);text-align:center;margin:0;min-height:17px;}
 #mClose{appearance:none;border:1px solid var(--line);background:transparent;color:var(--ink);font:600 13px/1 var(--font);padding:10px 16px;border-radius:999px;cursor:pointer;touch-action:manipulation;}
 #mClose[hidden]{display:none;}
+/* Support link: a quiet line under the mode cards, only shown once TIP_URL is set */
+#mTip{display:inline-flex;align-items:center;gap:6px;margin-top:2px;padding:8px 12px;border-radius:999px;font:500 12.5px/1 var(--font);color:var(--ink-dim);text-decoration:none;touch-action:manipulation;transition:color .2s,background .2s;}
+#mTip svg{width:15px;height:15px;stroke:currentColor;fill:none;stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round;}
+#mTip:hover,#mTip:focus-visible{color:var(--accent);background:rgba(240,200,140,.1);outline:none;}
+#mTip[hidden]{display:none;}
 @media (max-height:620px){.mcard canvas{height:96px}#modes h1{font-size:24px}#modes{gap:12px}}
 @media (prefers-reduced-motion:reduce){#ribbon,#modes{transition:none}}
 </style>
@@ -182,6 +187,7 @@ body.ribbon #pad{bottom:calc(196px + env(safe-area-inset-bottom,0px));}
   </div>
   <p class="mnote" id="mNote"></p>
   <button id="mClose" hidden>Back to my tray</button>
+  <a id="mTip" hidden target="_blank" rel="noopener"><svg viewBox="0 0 24 24"><path d="M5 9h11v5a5 5 0 0 1-5 5h-1a5 5 0 0 1-5-5z"/><path d="M16 10.5h1.5a2.5 2.5 0 0 1 0 5H16"/><path d="M9 3.5c-.6.8.6 1.6 0 2.5M12.5 3.5c-.6.8.6 1.6 0 2.5"/></svg>Enjoying Sandtray? Buy me a coffee</a>
 </div>
 <div id="undo" role="status" hidden><span>Cleared</span><button><svg viewBox="0 0 24 24"><path d="M9 14L4 9l5-5"/><path d="M4 9h10a6 6 0 0 1 0 12h-3"/></svg>Undo</button></div>
 <script>
@@ -3307,6 +3313,13 @@ function renderModeCards(){
 
 /* ---- the start screen and switching modes ---- */
 const modesEl=$('#modes'), btnHome=$('#btnHome'), mNote=$('#mNote'), mClose=$('#mClose');
+// Support link: set TIP_URL to your Ko-fi or Buy Me a Coffee page; empty keeps the link hidden.
+const TIP_URL = 'https://ko-fi.com/sandtray';
+const mTip=$('#mTip');
+if(TIP_URL){
+  mTip.href=TIP_URL; mTip.hidden=false;
+  mTip.addEventListener('click',()=>analytics.track('tip_click', { mode: mode||null, session_s: Math.round((performance.now()-sessionStart)/1000) }));
+}
 function showModes(on){
   if(on){
     modesEl.hidden=false; modesEl.classList.remove('gone');
