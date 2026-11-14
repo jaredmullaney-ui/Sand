@@ -8,8 +8,8 @@ A real-time sand tray for phones and tablets, in the browser. Draw in it with yo
 
 Every visit opens on a start screen with two modes. Each one starts on a fresh tray. The button in the top-left corner brings the start screen back (switching modes starts a fresh tray; **Back to my tray** keeps yours).
 
-- **Zen Garden:** the sand tools, the classic one-tap castle, and the Garden items below.
-- **Castle Builder:** the sand tools, plus a ribbon of castle pieces you build with piece by piece. The tray starts with deeper sand to build with.
+- **Zen Garden:** the sand tools and the Garden items below. No castles: those live in Castle Builder.
+- **Castle Builder:** the sand tools, plus a ribbon of castle pieces you build with piece by piece. No garden items. The tray starts with deeper sand to build with.
 
 Add `#mode=zen` or `#mode=castle` to the URL to skip the start screen.
 
@@ -46,8 +46,8 @@ There is no snapping: pieces land exactly where you put them. What happens next 
 | Rake | Combs five parallel grooves, zen-garden style. |
 | Smooth | Loosens the sand under your finger so it settles flat. |
 | Pour | Hold to pour a stream of sand that builds a cone. |
-| Castle | Tap Castle, then tap the sand to build a classic sand castle. It is packed from the tray's own sand, so the area around it gets shallower. Swiping through it, tilting steeply or shaking knocks it down into loose sand again. When the sand runs low, shake to free some up. |
-| Garden | Opens a small menu of zen garden items: river stones, a stone lantern, a moss mound and a cherry blossom tree. Drag one onto the sand (or tap it to drop it in an open spot). Setting an item down leaves no marks. Drag a placed item to move it and it plows a furrow through the sand like a real object. Items can't be resized. Raked and sliding sand piles up against them and flows around them. Tilt the tray steeply or shake it hard and items can slide off the edge; they are gone until you add them again. **Clear** in the menu removes them all. |
+| Castle | Castle Builder only. Opens the ribbon of castle pieces described above. |
+| Garden | Zen Garden only. Opens a small menu of zen garden items: river stones, a stone lantern, a moss mound and a cherry blossom tree. Drag one onto the sand (or tap it to drop it in an open spot). Setting an item down leaves no marks. Drag a placed item to move it and it plows a furrow through the sand like a real object. Items can't be resized. Raked and sliding sand piles up against them and flows around them. Tilt the tray steeply or shake it hard and items can slide off the edge; they are gone until you add them again. **Clear** in the menu removes them all. |
 | Tilt | Uses the phone's motion sensors. Small tilts do nothing (static friction); steep tilts make the sand avalanche and slide downhill with momentum; a quick shake levels it. |
 
 On a computer, drag with the mouse to draw, use the arrow keys or the on-screen tilt pad to tilt the tray, and press Space to shake it.
