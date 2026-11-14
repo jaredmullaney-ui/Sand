@@ -483,7 +483,7 @@ void main(){
 const FS_PACK = COMMON + `
 uniform sampler2D uA; uniform sampler2D uTool;
 uniform float uDt, uH0, uShake, uTilt, uSeed; uniform vec2 uDown;
-uniform sampler2D uW; uniform int uHasW; uniform float uTime, uRemnant;
+uniform sampler2D uW; uniform sampler2D uWD; uniform int uHasW; uniform float uTime, uRemnant;
 out vec4 o;
 float W(ivec2 p){ return min(texelFetch(uA,cl(p),0).w, texelFetch(uA,cl(p),0).x); }
 float Hh(ivec2 p){ return texelFetch(uA,cl(p),0).x; }
@@ -493,8 +493,8 @@ void main(){
   vec4 t=texelFetch(uTool,p,0);
   // moat banks are dug in damp sand: they keep the shape they were dug in, and the water keeps them wet
   vec2 wm = uHasW==1 ? texelFetch(uW,p,0).xy : vec2(0.,1e9);
-  bool wetZ = wm.x>0.3;
-  if(wetZ && t.x>=5e3 && (wm.y>1e8 || uTime-wm.y<1.0)){ o=vec4(s.xyz,s.x); return; }
+  bool wetZ = uHasW==1 && texelFetch(uWD,p,0).y>0.5;   // sand the water has soaked
+  if(wm.x>0.3 && t.x>=5e3 && (wm.y>1e8 || uTime-wm.y<1.0)){ o=vec4(s.xyz,s.x); return; }
   float w=min(s.w,s.x);
   if(w<=1e-4){ o=vec4(s.xyz,0.); return; }
   if(t.x<5e3 && t.x<w) w=0.;                   // a finger or rake through the castle breaks the whole column
@@ -521,6 +521,56 @@ void main(){
   rate+=load*(0.3+0.6*drop+0.6*nzS)*(0.5+nz);
   w-=rate*uH0*uDt;
   o=vec4(s.xyz,max(w,0.));
+}`;
+
+/* Moat water: a shallow-water layer on top of the sand ("virtual pipes"). WD texel: x = water depth (cells),
+   y = how wet the sand is (0..1), z = water surface height (sand + water), w = flow speed (for the look).
+   WF texel: outflow to +x, -x, +y, -y. Water runs downhill in the tilted tray and pours off its edges. */
+const FS_WFLUX = COMMON + `
+uniform sampler2D uA; uniform sampler2D uWD; uniform sampler2D uWF;
+uniform float uDt, uGz, uDamp; uniform vec2 uGxy;
+out vec4 o;
+bool inb(ivec2 p){ return p.x>=0&&p.y>=0&&p.x<uN.x&&p.y<uN.y; }
+// potential per unit mass: height in the tray plus the pull of the tilt
+float phi(ivec2 p, float z){ return uGz*z - dot(uGxy, vec2(p)); }
+float Hq(ivec2 q, float bp){ return inb(q) ? phi(q, texelFetch(uA,q,0).x+texelFetch(uWD,q,0).x) : phi(q, bp); }
+void main(){
+  ivec2 p=ivec2(gl_FragCoord.xy);
+  float d=texelFetch(uWD,p,0).x;
+  if(d<=0.){ o=vec4(0.); return; }
+  float b=texelFetch(uA,p,0).x, hp=phi(p,b+d);
+  vec4 f=texelFetch(uWF,p,0)*uDamp;
+  // past the tray's edge the floor is open: water that reaches it runs off the page
+  f.x=max(0., f.x+uDt*(hp-Hq(p+ivec2(1,0),b)));
+  f.y=max(0., f.y+uDt*(hp-Hq(p-ivec2(1,0),b)));
+  f.z=max(0., f.z+uDt*(hp-Hq(p+ivec2(0,1),b)));
+  f.w=max(0., f.w+uDt*(hp-Hq(p-ivec2(0,1),b)));
+  float tot=(f.x+f.y+f.z+f.w)*uDt;
+  if(tot>d) f*=d/tot;                          // a cell cannot give away more water than it holds
+  o=f;
+}`;
+const FS_WDEPTH = COMMON + `
+uniform sampler2D uA; uniform sampler2D uWD; uniform sampler2D uWF;
+uniform float uDt, uCap, uDry; uniform int uSrcN; uniform vec4 uSrc[4];
+out vec4 o;
+bool inb(ivec2 p){ return p.x>=0&&p.y>=0&&p.x<uN.x&&p.y<uN.y; }
+float Fi(ivec2 q, int c){ if(!inb(q)) return 0.; vec4 f=texelFetch(uWF,q,0); return c==0?f.x:c==1?f.y:c==2?f.z:f.w; }
+void main(){
+  ivec2 p=ivec2(gl_FragCoord.xy);
+  vec4 s=texelFetch(uWD,p,0), f=texelFetch(uWF,p,0);
+  float outF=f.x+f.y+f.z+f.w;
+  float inF=Fi(p-ivec2(1,0),0)+Fi(p+ivec2(1,0),1)+Fi(p-ivec2(0,1),2)+Fi(p+ivec2(0,1),3);
+  float d=s.x+uDt*(inF-outF);
+  // water poured in where a moat was started
+  for(int i=0;i<4;i++){ if(i>=uSrcN) break; vec4 q=uSrc[i]; vec2 r=vec2(p)+0.5-q.xy; d+=q.w*uDt*exp(-dot(r,r)/(q.z*q.z))/(3.14159*q.z*q.z); }
+  // dry sand soaks up some of the water that reaches it; wet sand slowly dries once the water has gone
+  float y=s.y;
+  if(d>0.){ float take=min(d,(1.-y)*uCap); d-=take; y+=take/uCap; }
+  // a film too thin to flow soaks in and dries; wet sand dries once the water has gone
+  if(d<0.06){ d=max(0., d-uDt*0.04); y=max(0., y-uDt*uDry); }
+  if(d<1e-4) d=0.;
+  float b=texelFetch(uA,p,0).x;
+  o=vec4(d, y, b+d, 0.5*(inF+outF)/max(d,0.3));
 }`;
 
 /* Grain-coordinate offset advection: grains travel with the flow */
@@ -743,8 +793,8 @@ uniform float uGS;       // grain texture px per css px
 uniform float uGT;       // grain texture size
 uniform vec3 uL, uSun, uSky;
 uniform float uTime, uExposure;
-// moat water. uW texel: x = moat mask, y = time the water reaches this cell, zw = centre of its body of water
-uniform sampler2D uW; uniform int uHasW; uniform float uWl, uWRip, uH0c; uniform vec2 uWS;
+// moat water. uWD texel: x = depth, y = how wet the sand is, z = water surface height, w = flow speed
+uniform sampler2D uWD; uniform int uHasW; uniform float uWRip, uH0c;
 out vec4 o;
 vec4 cubicW(float v){ vec4 n=vec4(1.,2.,3.,4.)-v; vec4 s=n*n*n; float x=s.x; float y=s.y-4.*s.x; float z=s.z-4.*s.y+6.*s.x; float w=6.-x-y-z; return vec4(x,y,z,w)*(1./6.); }
 vec4 bicubic(sampler2D t, vec2 tc, vec2 size){
@@ -870,29 +920,28 @@ void main(){
   if(uHasW==1){
     // ---- moat water: a silty, see-through layer over wet sand, with live ripples and lamp glints ----
     vec2 c2=tc-0.5; ivec2 j0=ivec2(floor(c2)); vec2 fj=c2-vec2(j0);
-    vec4 w00=texelFetch(uW,clamp(j0,ivec2(0),uN-ivec2(1)),0), w10=texelFetch(uW,clamp(j0+ivec2(1,0),ivec2(0),uN-ivec2(1)),0);
-    vec4 w01=texelFetch(uW,clamp(j0+ivec2(0,1),ivec2(0),uN-ivec2(1)),0), w11=texelFetch(uW,clamp(j0+ivec2(1,1),ivec2(0),uN-ivec2(1)),0);
-    float m=mix(mix(w00.x,w10.x,fj.x), mix(w01.x,w11.x,fj.x), fj.y);
-    if(m>0.002){
-      // water arrives along the channel: each corner fills over a moment once the front reaches it
-      float f00=w00.x*clamp((uTime-w00.y)/0.35,0.,1.), f10=w10.x*clamp((uTime-w10.y)/0.35,0.,1.);
-      float f01=w01.x*clamp((uTime-w01.y)/0.35,0.,1.), f11=w11.x*clamp((uTime-w11.y)/0.35,0.,1.);
-      float fill=mix(mix(f00,f10,fj.x), mix(f01,f11,fj.x), fj.y);
-      #define FRONT(W) ((W).x*step(0.,uTime-(W).y)*(1.-smoothstep(0.2,0.7,uTime-(W).y)))
-      float front=max(max(FRONT(w00),FRONT(w10)),max(FRONT(w01),FRONT(w11)));
-      vec4 wn=w00; if(w10.x>wn.x) wn=w10; if(w01.x>wn.x) wn=w01; if(w11.x>wn.x) wn=w11;
-      // ripples: two drifting wave fields, stronger when the tray is shaken or sloshing
+    vec4 w00=texelFetch(uWD,clamp(j0,ivec2(0),uN-ivec2(1)),0), w10=texelFetch(uWD,clamp(j0+ivec2(1,0),ivec2(0),uN-ivec2(1)),0);
+    vec4 w01=texelFetch(uWD,clamp(j0+ivec2(0,1),ivec2(0),uN-ivec2(1)),0), w11=texelFetch(uWD,clamp(j0+ivec2(1,1),ivec2(0),uN-ivec2(1)),0);
+    float wet=mix(mix(w00.y,w10.y,fj.x), mix(w01.y,w11.y,fj.x), fj.y);
+    // the water surface, from the corners that hold water (a dry corner's sand may stand above it: that is the shore)
+    vec4 bw=vec4((1.-fj.x)*(1.-fj.y), fj.x*(1.-fj.y), (1.-fj.x)*fj.y, fj.x*fj.y)*step(vec4(0.004),vec4(w00.x,w10.x,w01.x,w11.x));
+    float ws=bw.x+bw.y+bw.z+bw.w;
+    if(ws>0. || wet>0.004){
+      float wsurf0= ws>0. ? dot(bw,vec4(w00.z,w10.z,w01.z,w11.z))/ws : -1e6;
+      float sp= ws>0. ? dot(bw,vec4(w00.w,w10.w,w01.w,w11.w))/ws : 0.;
+      float dmax=max(max(w00.x,w10.x),max(w01.x,w11.x));
+      float rip=uWRip+min(2.,sp*0.03);
+      // ripples: two drifting wave fields, stronger when the tray is shaken or the water is running
       vec2 q=nat*0.11; float t=uTime;
       float e=0.6;
       #define RIP(P) (vnoise((P)+vec2(t*0.55,t*0.31))+0.7*vnoise((P)*1.7-vec2(t*0.42,-t*0.63)+9.1)+0.35*vnoise((P)*3.3+vec2(-t*0.9,t*0.7)+3.7))
       float r0=RIP(q), rx=RIP(q+vec2(e,0.)), ry=RIP(q+vec2(0.,e));
-      vec2 rg=vec2(rx-r0, ry-r0)/e*uWRip;
-      float wsurf=uWl+dot(uWS, tc-wn.zw)+(r0-1.)*0.04*uWRip;
-      float depth=(wsurf-h)*clamp(fill*1.15,0.,1.);       // cells of water above the sand
-      float a=smoothstep(0.0,0.22,depth)*smoothstep(0.05,0.5,m);
-      // wet sand: under the water and in a band up the moat's banks
-      float wet=clamp(fill*1.4,0.,1.)*smoothstep(0.05,0.6,m)*(1.-smoothstep(0.,1.1*uH0c,-depth));
-      wet=max(wet,a);
+      vec2 rg=vec2(rx-r0, ry-r0)/e*rip;
+      float depth=wsurf0+(r0-1.)*0.04*rip-h;            // cells of water above the sand
+      float a=smoothstep(0.0,0.22,depth)*smoothstep(0.06,0.2,dmax);
+      float front=smoothstep(12.,60.,sp)*a;             // running water catches the light
+      // wet sand: under the water, and wherever the water has been until it dries
+      wet=max(wet*0.9,a);
       col*=mix(vec3(1.), vec3(0.56,0.55,0.56), wet);
       if(a>0.){
         float dpx=max(depth,0.)*uCs;
@@ -903,7 +952,7 @@ void main(){
         // silt in the water scatters light back up: it reads as murky blue-green even in the shade of the banks
         vec3 ins=vec3(0.060,0.150,0.165)*(uSun*max(L.z,0.)*mix(0.55,0.7,sh)+uSky*3.2);
         vec3 wcol=bottom*Tr+ins*(1.-Tr);
-        vec3 Nw=normalize(vec3(-rg*0.55-uWS*0.3, 1.));
+        vec3 Nw=normalize(vec3(-rg*0.55, 1.));
         vec3 Rv=reflect(vec3(0.,0.,-1.),Nw);
         float F=0.035+0.965*pow(1.-Nw.z,5.)+0.05*smoothstep(0.9,1.6,r0);
         // reflection of the room: dim walls, and the warm lamp low on one side
@@ -1420,6 +1469,7 @@ try{
     part:program(FS_PART, VS_PART), pack:program(FS_PACK),
     sprite:program(FS_SPRITE), obj:program(FS_OBJ, VS_ITEM), item:program(FS_ITEM, VS_ITEM),
     probe:program(FS_PROBE), flag:program(FS_FLAG, VS_FLAG),
+    wflux:program(FS_WFLUX), wdepth:program(FS_WDEPTH),
   };
 }catch(e){ fail('The sand simulation failed to start on this device: '+e.message); return; }
 
@@ -1454,7 +1504,7 @@ const LOOK = {
 /* Simulation state                                                    */
 /* ------------------------------------------------------------------ */
 let NX=0, NY=0, cs=3, vw=0, vh=0, angle=0, natW=0, natH=0;
-let A=[], B=[], Kt, ToolT, SurfA, SurfB, RedT, ObjT, WatT;
+let A=[], B=[], Kt, ToolT, SurfA, SurfB, RedT, ObjT, WatT, WD=[], WF=[], fWD=[], fWF=[];
 let fA=[], fB=[], fK, fTool, fSurfA, fSurfB, fRed, fObj;
 let cells = {}; // tunables in cells
 const RED=16;
@@ -1507,8 +1557,8 @@ function initialHeights(nx,ny,c){
 function mulberry(a){ return ()=>{ a|=0; a=a+0x6D2B79F5|0; let t=Math.imul(a^a>>>15,1|a); t=t+Math.imul(t^t>>>7,61|t)^t; return ((t^t>>>14)>>>0)/4294967296; }; }
 
 function allocSim(nx,ny,initData){
-  [...A,...B,Kt,ToolT,SurfA,SurfB,RedT,ObjT,WatT].forEach(t=>t&&gl.deleteTexture(t));
-  [...fA,...fB,fK,fTool,fSurfA,fSurfB,fRed,fObj].forEach(f=>f&&gl.deleteFramebuffer(f));
+  [...A,...B,Kt,ToolT,SurfA,SurfB,RedT,ObjT,WatT,...WD,...WF].forEach(t=>t&&gl.deleteTexture(t));
+  [...fA,...fB,fK,fTool,fSurfA,fSurfB,fRed,fObj,...fWD,...fWF].forEach(f=>f&&gl.deleteFramebuffer(f));
   A=[0,1].map(i=>tex(nx,ny,gl.RGBA32F,gl.RGBA,gl.FLOAT,NEAREST,gl.CLAMP_TO_EDGE, i===0?initData:null));
   B=[0,1].map(()=>tex(nx,ny,gl.RGBA32F,gl.RGBA,gl.FLOAT,NEAREST,gl.CLAMP_TO_EDGE,new Float32Array(nx*ny*4)));
   Kt=tex(nx,ny,gl.R32F,gl.RED,gl.FLOAT,NEAREST,gl.CLAMP_TO_EDGE);
@@ -1518,6 +1568,9 @@ function allocSim(nx,ny,initData){
   RedT=tex(RED,RED,gl.RGBA32F,gl.RGBA,gl.FLOAT,NEAREST,gl.CLAMP_TO_EDGE);
   ObjT=tex(nx,ny,gl.RGBA16F,gl.RGBA,gl.HALF_FLOAT,MIPLIN,gl.CLAMP_TO_EDGE);
   WatT=tex(nx,ny,gl.RGBA32F,gl.RGBA,gl.FLOAT,NEAREST,gl.CLAMP_TO_EDGE);
+  WD=[0,1].map(()=>tex(nx,ny,gl.RGBA32F,gl.RGBA,gl.FLOAT,NEAREST,gl.CLAMP_TO_EDGE,new Float32Array(nx*ny*4)));
+  WF=[0,1].map(()=>tex(nx,ny,gl.RGBA32F,gl.RGBA,gl.FLOAT,NEAREST,gl.CLAMP_TO_EDGE,new Float32Array(nx*ny*4)));
+  fWD=WD.map(t=>fbo([t])); fWF=WF.map(t=>fbo([t]));
   fA=A.map(t=>fbo([t])); fB=B.map(t=>fbo([t])); fK=fbo([Kt]); fTool=fbo([ToolT]);
   fSurfA=fbo([SurfA]); fSurfB=fbo([SurfB]); fRed=fbo([RedT]); fObj=fbo([ObjT]);
   objWas=true; // clear the new occlusion map on the next frame
@@ -1553,6 +1606,7 @@ function setup(keepState){
 }
 // Read back the current heights and resample them into a new grid (keeps the sand on resize)
 function resample(nx,ny,c){
+  wdOld = waterAny && fWD[0] ? readTex(fWD[0]) : null;
   const old=new Float32Array(NX*NY*4);
   gl.bindFramebuffer(gl.FRAMEBUFFER,fA[0]); gl.readPixels(0,0,NX,NY,gl.RGBA,gl.FLOAT,old);
   const out=new Float32Array(nx*ny*4);
@@ -2866,7 +2920,7 @@ function crumbleSound(){
 /* ---- undo: the tray as it was before the last piece, flag or moat ---- */
 const undoStack=[];
 function pushUndo(a){
-  undoStack.push({A:a||readTex(fA[0]), flags:flags.map(f=>Object.assign({},f)), wat:waterM.slice(), any:waterAny, N:[NX,NY]});
+  undoStack.push({A:a||readTex(fA[0]), flags:flags.map(f=>Object.assign({},f)), wat:waterM.slice(), wd:waterAny?readTex(fWD[0]):null, src:waterSrc.map(w=>Object.assign({},w)), any:waterAny, N:[NX,NY]});
   if(undoStack.length>6) undoStack.shift();
   updateUndoBtn();
 }
@@ -2877,16 +2931,24 @@ function undoLast(){
   gl.bindTexture(gl.TEXTURE_2D,A[0]); gl.texSubImage2D(gl.TEXTURE_2D,0,0,0,NX,NY,gl.RGBA,gl.FLOAT,s.A);
   const bd=readTex(fB[0]); for(let i=0;i<NX*NY;i++){ bd[i*4+2]=0; bd[i*4+3]=0; }
   gl.bindTexture(gl.TEXTURE_2D,B[0]); gl.texSubImage2D(gl.TEXTURE_2D,0,0,0,NX,NY,gl.RGBA,gl.FLOAT,bd);
-  flags=s.flags; waterM=s.wat; waterAny=s.any; uploadWater();
+  flags=s.flags; waterM=s.wat; waterAny=s.any; waterSrc=s.src||[]; uploadWater(); clearWDTex();
+  if(s.wd){ gl.bindTexture(gl.TEXTURE_2D,WD[0]); gl.texSubImage2D(gl.TEXTURE_2D,0,0,0,NX,NY,gl.RGBA,gl.FLOAT,s.wd); }
   for(const pt of pointers.values()) pt.tool==='moat' && (pt.moat.cells=new Set());
   np=0; castlesAny=true; updateUndoBtn();
   analytics.track('castle_undo', {});
 }
 
-/* ---- moat: dig a channel; water runs in along it from where you started, and stays level as the tray tilts ---- */
-let waterM=new Float32Array(0), waterAny=false, wDirty=null;
-let wS=[0,0], wSv=[0,0];                                          // water surface slope (sloshes as the tray tilts)
-function clearWater(){ waterM=new Float32Array(NX*NY*4); for(let i=0;i<NX*NY;i++) waterM[i*4+1]=1e9; waterAny=false; wS=[0,0]; wSv=[0,0]; uploadWater(); }
+/* ---- moat: dig a channel and water pours in where you started it. The water is simulated on the GPU
+   (FS_WFLUX / FS_WDEPTH): it runs downhill when the tray tilts, sloshes when shaken, spreads out when the
+   banks are knocked down, soaks into dry sand and pours off the edges of the tray.
+   waterM (WatT) is only the dug channel: it keeps freshly dug banks packed. ---- */
+let waterM=new Float32Array(0), waterAny=false, wDirty=null, waterSrc=[], wdOld=null;
+let wS=[0,0], wSv=[0,0];                                          // how hard the tray is rocking the water (ripples)
+function clearWDTex(){
+  const z=new Float32Array(NX*NY*4);
+  for(const t of [...WD,...WF]){ gl.bindTexture(gl.TEXTURE_2D,t); gl.texSubImage2D(gl.TEXTURE_2D,0,0,0,NX,NY,gl.RGBA,gl.FLOAT,z); }
+}
+function clearWater(){ waterM=new Float32Array(NX*NY*4); for(let i=0;i<NX*NY;i++) waterM[i*4+1]=1e9; waterAny=false; waterSrc=[]; wS=[0,0]; wSv=[0,0]; uploadWater(); clearWDTex(); }
 function uploadWater(){
   if(!WatT) return;
   gl.bindTexture(gl.TEXTURE_2D,WatT); gl.texSubImage2D(gl.TEXTURE_2D,0,0,0,NX,NY,gl.RGBA,gl.FLOAT,waterM); wDirty=null;
@@ -2911,40 +2973,22 @@ function markMoat(pt, ax, ay, bx, by){
 }
 function finishMoat(pt){
   const S=pt.moat.cells; if(!S.size) return;
-  const now=simTime, cellT=cs/380;                       // the water runs along the channel at ~380 px/s
-  const T=new Map(); for(const i of S) T.set(i,1e9);
-  const flood=(seeds)=>{ const q=seeds.slice(); for(let k=0;k<q.length;k++){ const i=q[k], t=T.get(i), c=i/4, x=c%NX, y=(c-x)/NX;
-    for(const [ox,oy] of [[1,0],[-1,0],[0,1],[0,-1],[1,1],[-1,1],[1,-1],[-1,-1]]){ const xx=x+ox, yy=y+oy; if(xx<0||yy<0||xx>=NX||yy>=NY) continue;
-      const j=(yy*NX+xx)*4; const tj=T.get(j); if(tj===undefined) continue; const nt=t+cellT*(ox&&oy?1.41:1); if(nt<tj){ T.set(j,nt); q.push(j); } } } };
-  // from where the moat was started...
-  const si=(Math.min(NY-1,Math.max(0,Math.floor(pt.moat.start[1])))*NX+Math.min(NX-1,Math.max(0,Math.floor(pt.moat.start[0]))))*4;
-  let s0=si; if(!T.has(s0)){ let best=1e9; for(const i of S){ const c=i/4, x=c%NX, y=(c-x)/NX, r=Math.hypot(x-pt.moat.start[0],y-pt.moat.start[1]); if(r<best){ best=r; s0=i; } } }
-  T.set(s0, now+0.3); const seeds=[s0];
-  // ...and from any water it now connects to
-  for(const i of S){ const c=i/4, x=c%NX, y=(c-x)/NX;
-    for(const [ox,oy] of [[1,0],[-1,0],[0,1],[0,-1]]){ const xx=x+ox, yy=y+oy; if(xx<0||yy<0||xx>=NX||yy>=NY) continue; const j=(yy*NX+xx)*4;
-      if(waterM[j]>0.05 && waterM[j+1]<1e8){ const t=Math.max(now,waterM[j+1])+0.05; if(t<T.get(i)){ T.set(i,t); seeds.push(i); } } } }
-  flood(seeds);
-  for(const [i,t] of T) waterM[i+1]= t<1e8 ? t : now+0.3;
+  const now=simTime;
+  for(const i of S) waterM[i+1]=now;                     // the dug banks keep their shape while the water arrives
   pt.moat.cells=new Set();
-  waterBodies(); uploadWater(); waterAny=true;
+  uploadWater();
+  // pour in enough water to fill the new channel to a little below the sand around it
+  const sand=readTex(fA[0]), wat=readTex(fWD[0]), wl=cells.wl;
+  let V=0; for(const i of S) if(waterM[i]>0.3) V+=Math.max(0, wl-sand[i]-wat[i]);
+  const T=Math.min(2.2, Math.max(0.6, Math.sqrt(S.size)*cs/260));
+  if(V>0){
+    if(waterSrc.length>=4) waterSrc.shift();
+    waterSrc.push({x:pt.moat.start[0], y:pt.moat.start[1], r:Math.max(1.5,cells.moatR*0.6), rate:V/T, left:V});
+  }
+  waterAny=true;
   setTimeout(()=>{ if(waterAny) waterSound(); }, 250);
   analytics.track('castle_moat_dug', {cells:S.size});
   noteInteraction();
-}
-// connected bodies of water and their centres (the water surface pivots about its centre when tilted)
-function waterBodies(){
-  const N=NX*NY, lab=new Int32Array(N).fill(-1), st=[];
-  for(let s=0;s<N;s++){
-    if(lab[s]>=0 || waterM[s*4]<0.05) continue;
-    let sx=0, sy=0, sm=0; const mem=[]; st.push(s); lab[s]=s;
-    while(st.length){ const c=st.pop(); mem.push(c); const x=c%NX, y=(c-x)/NX, m=waterM[c*4]; sx+=m*(x+0.5); sy+=m*(y+0.5); sm+=m;
-      if(x>0 && lab[c-1]<0 && waterM[(c-1)*4]>=0.05){ lab[c-1]=s; st.push(c-1); }
-      if(x<NX-1 && lab[c+1]<0 && waterM[(c+1)*4]>=0.05){ lab[c+1]=s; st.push(c+1); }
-      if(y>0 && lab[c-NX]<0 && waterM[(c-NX)*4]>=0.05){ lab[c-NX]=s; st.push(c-NX); }
-      if(y<NY-1 && lab[c+NX]<0 && waterM[(c+NX)*4]>=0.05){ lab[c+NX]=s; st.push(c+NX); } }
-    for(const c of mem){ waterM[c*4+2]=sx/sm; waterM[c*4+3]=sy/sm; }
-  }
 }
 function waterSound(){
   if(!audio||!soundOn) return;
@@ -2957,9 +3001,27 @@ function waterSound(){
 }
 function stepWater(dt){
   if(!waterAny) return;
-  // the surface stays level in the room, so relative to the tray it leans toward the low side; it overshoots a little (slosh)
+  // how far the water would lean if it were sitting still: drives the ripples as the tray rocks
   let tx=gx/Math.max(gz,1e-6), ty=gy/Math.max(gz,1e-6); const tl=Math.hypot(tx,ty); if(tl>1.2){ tx*=1.2/tl; ty*=1.2/tl; }
   for(const [k,t] of [[0,tx],[1,ty]]){ const a=40*(t-wS[k])-3*wSv[k]+(shake>0.15?(Math.random()-0.5)*shake*60:0); wSv[k]+=a*dt; wS[k]+=wSv[k]*dt; }
+  for(const w of waterSrc) w.left-=w.rate*dt;
+  waterSrc=waterSrc.filter(w=>w.left>0);
+}
+const WSRC=new Float32Array(16);
+function stepWaterGPU(sdt){
+  const Gw=0.4;                                          // water runs a little slower than real, like the sand
+  WSRC.fill(0); waterSrc.forEach((w,i)=>{ WSRC.set([w.x,w.y,w.r,w.rate],i*4); });
+  run(progs.wflux, fWF[1], u=>{
+    gl.uniform2i(u.uN,NX,NY); bindTex(progs.wflux,'uA',0,A[0]); bindTex(progs.wflux,'uWD',1,WD[0]); bindTex(progs.wflux,'uWF',2,WF[0]);
+    gl.uniform1f(u.uDt,sdt); gl.uniform1f(u.uGz,gz*Gw); gl.uniform2f(u.uGxy,gx*Gw,gy*Gw); gl.uniform1f(u.uDamp,Math.exp(-sdt*(1.2+shake*2)));
+  });
+  WF.reverse(); fWF.reverse();
+  run(progs.wdepth, fWD[1], u=>{
+    gl.uniform2i(u.uN,NX,NY); bindTex(progs.wdepth,'uA',0,A[0]); bindTex(progs.wdepth,'uWD',1,WD[0]); bindTex(progs.wdepth,'uWF',2,WF[0]);
+    gl.uniform1f(u.uDt,sdt); gl.uniform1f(u.uCap,cells.h0*0.012); gl.uniform1f(u.uDry,1/45);
+    gl.uniform1i(u.uSrcN,waterSrc.length); gl.uniform4fv(u.uSrc,WSRC);
+  });
+  WD.reverse(); fWD.reverse();
 }
 
 /* ---- flags: toothpick flags planted in the castle; they topple when the sand under them gives way ---- */
@@ -3293,10 +3355,15 @@ function builderGridChanged(old, kept){
   waterM=new Float32Array(NX*NY*4); for(let i=0;i<NX*NY;i++) waterM[i*4+1]=1e9;
   if(kept && oN[0]>0 && oldW.length===oN[0]*oN[1]*4){
     for(let y=0;y<NY;y++) for(let x=0;x<NX;x++){ const ox=Math.min(oN[0]-1,Math.floor((x+0.5)*oN[0]/NX)), oy=Math.min(oN[1]-1,Math.floor((y+0.5)*oN[1]/NY)); const i=(y*NX+x)*4, j=(oy*oN[0]+ox)*4; waterM[i]=oldW[j]; waterM[i+1]=oldW[j+1]; }
-    if(waterAny) waterBodies();
+    if(waterAny && wdOld){                                // carry the water over to the new grid
+      const d=new Float32Array(NX*NY*4), k=old.cs/cs, [ox0,oy0]=[oN[0],oN[1]];
+      for(let y=0;y<NY;y++) for(let x=0;x<NX;x++){ const ox=Math.min(ox0-1,Math.floor((x+0.5)*ox0/NX)), oy=Math.min(oy0-1,Math.floor((y+0.5)*oy0/NY)); const i=(y*NX+x)*4, j=(oy*ox0+ox)*4;
+        d[i]=wdOld[j]*k; d[i+1]=wdOld[j+1]; d[i+2]=wdOld[j+2]*k; }
+      gl.bindTexture(gl.TEXTURE_2D,WD[0]); gl.texSubImage2D(gl.TEXTURE_2D,0,0,0,NX,NY,gl.RGBA,gl.FLOAT,d);
+    }
     for(const f of flags){ f.x*=NX/oN[0]; f.y*=NY/oN[1]; f.zb*=old.cs/cs; f.gh=null; }
-  } else { flags=[]; waterAny=false; }
-  uploadWater();
+  } else { flags=[]; waterAny=false; waterSrc=[]; }
+  wdOld=null; uploadWater();
 }
 function resetTray(){
   const data=initialHeights(NX,NY,cs);
@@ -3371,7 +3438,7 @@ window.__sand = {
     gesture:g=>gesturePieces(g), flag(x,y){ plantFlag(x,y); }, get flags(){ return flags; }, undo(){ undoLast(); }, get undoN(){ return undoStack.length; },
     moat(path){ pushUndo(); const pt=newPointer(path[0][0],path[0][1],'moat'); pt.moat={cells:new Set(), start:path[0].slice()}; pointers.set('moat',pt); for(let i=0;i<10;i++) simFrame(1/60);
       for(let i=1;i<path.length;i++){ pt.x=path[i][0]; pt.y=path[i][1]; simFrame(1/60); } for(let i=0;i<8;i++) simFrame(1/60); pointers.delete('moat'); finishMoat(pt); },
-    get water(){ return {any:waterAny, slope:wS.slice(), wl:cells.wl}; }, readW(){ return waterM; }, readB(){ return readTex(fB[0]); },
+    get water(){ return {any:waterAny, slope:wS.slice(), wl:cells.wl}; }, readW(){ return waterM; }, readWD(){ return readTex(fWD[0]); }, readB(){ return readTex(fB[0]); },
     showModes(on){ showModes(on!==false); },
   },
   garden:{
@@ -3430,8 +3497,7 @@ function frame(now){
     gl.uniform1f(u.uCs,cs); gl.uniform1f(u.uGS, LOOK.grainScale); gl.uniform1f(u.uGT,GT);
     gl.uniform3f(u.uL,L[0],L[1],L[2]); gl.uniform1f(u.uTime,simTime); gl.uniform1f(u.uExposure,LOOK.exposure);
     gl.uniform3fv(u.uSun,LOOK.sun); gl.uniform3fv(u.uSky,LOOK.sky);
-    bindTex(progs.final,'uW',6,WatT); gl.uniform1i(u.uHasW,waterAny?1:0);
-    gl.uniform1f(u.uWl,cells.wl); gl.uniform2f(u.uWS,wS[0],wS[1]); gl.uniform1f(u.uH0c,cells.h0);
+    bindTex(progs.final,'uWD',6,WD[0]); gl.uniform1i(u.uHasW,waterAny?1:0); gl.uniform1f(u.uH0c,cells.h0);
     gl.uniform1f(u.uWRip,0.35+Math.min(2.5,shake*4+Math.hypot(wSv[0],wSv[1])*1.5));
   });
 
@@ -3515,7 +3581,7 @@ function simFrame(dt){
       gl.uniform2i(u.uN,NX,NY); bindTex(progs.pack,'uA',0,A[0]); bindTex(progs.pack,'uTool',1,ToolT);
       gl.uniform1f(u.uDt,dt); gl.uniform1f(u.uH0,cells.h0); gl.uniform1f(u.uShake,Math.max(0,shake-0.12)); gl.uniform1f(u.uTilt,tilt);
       gl.uniform1f(u.uSeed,(simTime*3.7)%53.); gl.uniform2f(u.uDown,down[0],down[1]);
-      bindTex(progs.pack,'uW',2,WatT); gl.uniform1i(u.uHasW,waterAny?1:0); gl.uniform1f(u.uTime,simTime); gl.uniform1f(u.uRemnant,mode==='castle'?0:1);
+      bindTex(progs.pack,'uW',2,WatT); bindTex(progs.pack,'uWD',3,WD[0]); gl.uniform1i(u.uHasW,waterAny?1:0); gl.uniform1f(u.uTime,simTime); gl.uniform1f(u.uRemnant,mode==='castle'?0:1);
     });
     A.reverse(); fA.reverse();
   }
@@ -3548,6 +3614,7 @@ function simFrame(dt){
       gl.uniform1f(u.uSeed,(simTime*7.13+s*0.37)%97.); gl.uniform1f(u.uTear,P.grainTear);
     });
     B.reverse(); fB.reverse();
+    if(waterAny) stepWaterGPU(sdt);
   }
   stepParticles(dt, gx, gy, gz);
 }
