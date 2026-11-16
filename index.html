@@ -152,6 +152,46 @@ body.ribbon #pad{bottom:calc(196px + env(safe-area-inset-bottom,0px));}
 #fb .fbtns button:disabled{opacity:.5;cursor:default;}
 @media (max-height:620px){.mcard canvas{height:96px}#modes h1{font-size:24px}#modes{gap:12px}}
 @media (prefers-reduced-motion:reduce){#ribbon,#modes{transition:none}}
+
+/* Castle Battle: two players take turns on one device */
+.mcard b em{font:600 10px/1 var(--font);font-style:normal;letter-spacing:.05em;text-transform:uppercase;color:var(--ink-dim);border:1px solid var(--line);padding:3px 6px;border-radius:999px;margin-left:auto;}
+#bfx{position:fixed;left:0;top:0;width:100%;height:100%;pointer-events:none;}
+body.mode-battle #btnGarden,body.mode-battle #btnTilt,body.mode-battle #btnReset,body.mode-battle #pad,body.mode-battle #hint{display:none;}
+body.mode-battle:not(.bphase-build) #bar,body.mode-battle:not(.bphase-build) #ribbon{display:none;}
+body.mode-battle #toast{top:calc(84px + env(safe-area-inset-top,0px));}
+body.mode-battle.bphase-build #toast{top:calc(126px + env(safe-area-inset-top,0px));}
+#bHud{position:fixed;z-index:4;left:50%;transform:translateX(-50%);top:calc(14px + env(safe-area-inset-top,0px));width:min(340px,calc(100vw - 124px));box-sizing:border-box;padding:7px 12px 6px;border-radius:18px;background:var(--glass);-webkit-backdrop-filter:blur(16px);backdrop-filter:blur(16px);border:1px solid var(--line);box-shadow:0 8px 30px rgba(0,0,0,.25);pointer-events:none;}
+#bHud[hidden],#bDone[hidden],#bAmmo[hidden],#bCover[hidden]{display:none;}
+#bHud .bscore{display:flex;gap:10px;}
+#bHud .bside{flex:1;min-width:0;display:flex;align-items:center;gap:5px;font:700 11.5px/1 var(--font);color:var(--ink-dim);transition:color .2s;}
+#bHud .bside i{flex:0 0 auto;width:9px;height:9px;border-radius:50%;background:var(--pc);box-shadow:0 0 0 2px rgba(0,0,0,.2);}
+#bHud .bside b{flex:1;height:5px;border-radius:3px;background:rgba(255,240,220,.14);overflow:hidden;}
+#bHud .bside u{display:block;height:100%;width:100%;background:var(--pc);border-radius:3px;transition:width .6s;}
+#bHud .bside.on{color:var(--ink);}
+#bHud .bside.down span{text-decoration:line-through;}
+#bS0{--pc:#e0503f;} #bS1{--pc:#4f7fe6;flex-direction:row-reverse;}
+#bMsg{margin:5px 0 0;font:500 12px/1.3 var(--font);color:var(--ink);text-align:center;display:flex;align-items:center;justify-content:center;gap:5px;flex-wrap:wrap;}
+#bMsg svg{width:14px;height:14px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;}
+#bDone{position:fixed;z-index:4;left:50%;transform:translateX(-50%);top:calc(76px + env(safe-area-inset-top,0px));appearance:none;border:1px solid rgba(240,200,140,.6);background:var(--accent);color:#2a1f14;font:700 13px/1 var(--font);padding:10px 18px;border-radius:999px;cursor:pointer;touch-action:manipulation;box-shadow:0 6px 20px rgba(0,0,0,.3);}
+#bAmmo{position:fixed;z-index:4;left:50%;transform:translateX(-50%);bottom:calc(14px + env(safe-area-inset-bottom,0px));display:flex;gap:4px;padding:5px;border-radius:999px;background:var(--glass);-webkit-backdrop-filter:blur(18px) saturate(1.3);backdrop-filter:blur(18px) saturate(1.3);border:1px solid var(--line);box-shadow:0 8px 30px rgba(0,0,0,.28);}
+#bAmmo button{appearance:none;border:0;background:transparent;color:var(--ink-dim);display:flex;align-items:center;gap:7px;padding:10px 14px;border-radius:999px;font:600 12.5px/1 var(--font);cursor:pointer;touch-action:manipulation;white-space:nowrap;}
+#bAmmo button[aria-checked="true"]{background:rgba(240,200,140,.2);color:var(--accent);}
+#bAmmo button:disabled{opacity:.4;cursor:default;}
+#bAmmo i{width:15px;height:15px;border-radius:50%;flex:0 0 auto;}
+#bAmmo i.ball{background:radial-gradient(circle at 35% 30%,#f1dcb4,#b58d5d 60%,#6e5236);}
+#bAmmo i.balloon{background:radial-gradient(circle at 35% 30%,#e6f7ff,#58b4f0 55%,#1f5f9e);}
+#bAmmo em{font-style:normal;opacity:.75;}
+#bBanner{position:fixed;z-index:4;left:50%;top:42%;transform:translate(-50%,-50%) scale(.9);font:800 30px/1.1 var(--font);color:var(--ink);text-shadow:0 3px 18px rgba(0,0,0,.6);pointer-events:none;opacity:0;transition:opacity .3s,transform .3s;white-space:nowrap;}
+#bBanner.show{opacity:1;transform:translate(-50%,-50%) scale(1);}
+#bCover{position:fixed;inset:0;z-index:15;display:flex;align-items:center;justify-content:center;padding:calc(16px + env(safe-area-inset-top,0px)) 16px calc(16px + env(safe-area-inset-bottom,0px));box-sizing:border-box;background:rgba(14,11,8,.55);-webkit-backdrop-filter:blur(3px);backdrop-filter:blur(3px);}
+#bCover .bcard{width:100%;max-width:380px;box-sizing:border-box;padding:22px 20px 18px;border-radius:22px;border:1px solid var(--line);background:var(--glass-hi);-webkit-backdrop-filter:blur(22px) saturate(1.3);backdrop-filter:blur(22px) saturate(1.3);box-shadow:0 14px 40px rgba(0,0,0,.45);text-align:center;}
+#bCover h2{margin:0 0 8px;font:800 22px/1.2 var(--font);color:var(--pc,var(--ink));}
+#bCover p{margin:0 0 16px;font:500 14px/1.45 var(--font);color:var(--ink-dim);}
+#bCover .bcbtns{display:flex;gap:8px;justify-content:center;flex-wrap:wrap;}
+#bCover button{appearance:none;border:1px solid var(--line);background:transparent;color:var(--ink);font:600 14px/1 var(--font);padding:12px 18px;border-radius:999px;cursor:pointer;touch-action:manipulation;}
+#bCover #bcGo{background:var(--accent);border-color:var(--accent);color:#2a1f14;font-weight:700;}
+#bCover button[hidden]{display:none;}
+@media (prefers-reduced-motion:reduce){#bBanner{transition:none}}
 </style>
 </head>
 <body>
@@ -208,6 +248,7 @@ body.ribbon #pad{bottom:calc(196px + env(safe-area-inset-bottom,0px));}
   <div class="mcards">
     <button class="mcard" data-mode="zen"><canvas width="1" height="1"></canvas><div class="mbody"><b>Zen Garden <i hidden>Playing</i></b><span>Rake calm patterns and arrange stones, moss, a lantern and a cherry tree.</span></div></button>
     <button class="mcard" data-mode="castle"><canvas width="1" height="1"></canvas><div class="mbody"><b>Castle Builder <i hidden>Playing</i></b><span>Build towers, long walls and new levels from the tray's own sand. Add flags and a moat.</span></div></button>
+    <button class="mcard" data-mode="battle"><canvas width="1" height="1"></canvas><div class="mbody"><b>Castle Battle <i hidden>Playing</i><em>2 players</em></b><span>Two players, one phone. Each builds a castle and a catapult, then you take turns launching wet sand at each other.</span></div></button>
   </div>
   <p class="mnote" id="mNote"></p>
   <button id="mClose" hidden>Back to my tray</button>
@@ -229,6 +270,20 @@ body.ribbon #pad{bottom:calc(196px + env(safe-area-inset-bottom,0px));}
     <p class="fstatus" id="fbStatus" role="status"></p>
     <div class="fbtns"><button type="button" id="fbCancel">Cancel</button><button type="submit" id="fbSend">Send</button></div>
   </form>
+</div>
+<canvas id="bfx" aria-hidden="true"></canvas>
+<div id="bHud" hidden>
+  <div class="bscore"><div class="bside" id="bS0"><i></i><span>Red</span><b><u></u></b></div><div class="bside" id="bS1"><i></i><span>Blue</span><b><u></u></b></div></div>
+  <p id="bMsg" role="status"></p>
+</div>
+<button id="bDone" hidden>Done building</button>
+<div id="bAmmo" hidden role="radiogroup" aria-label="What to launch">
+  <button data-ammo="ball" role="radio" aria-checked="true"><i class="ball"></i><span>Sand ball</span></button>
+  <button data-ammo="balloon" role="radio" aria-checked="false"><i class="balloon"></i><span>Water balloon <em id="bBal">2</em></span></button>
+</div>
+<div id="bBanner" aria-hidden="true"></div>
+<div id="bCover" role="dialog" aria-modal="true" aria-labelledby="bcTitle" hidden>
+  <div class="bcard"><h2 id="bcTitle"></h2><p id="bcText"></p><div class="bcbtns"><button id="bcAlt" hidden></button><button id="bcGo"></button></div></div>
 </div>
 <div id="undo" role="status" hidden><span>Cleared</span><button><svg viewBox="0 0 24 24"><path d="M9 14L4 9l5-5"/><path d="M4 9h10a6 6 0 0 1 0 12h-3"/></svg>Undo</button></div>
 <script>
@@ -1692,6 +1747,7 @@ canvas.addEventListener('pointerdown',e=>{
   noteInteraction();
   if(menuOpen){ openMenu(false); return; }          // a tap outside the garden menu just closes it
   const p=cellPos(e);
+  if(battleDown(e,p)){ firstInteraction(); return; }
   if(castleMode){ firstInteraction(); placeCastle(p[0],p[1]); return; }
   if(builderDown(e,p)){ firstInteraction(); return; }
   if(grabItem(e)){ firstInteraction(); return; }
@@ -1700,13 +1756,14 @@ canvas.addEventListener('pointerdown',e=>{
   firstInteraction();
 });
 canvas.addEventListener('pointermove',e=>{
+  if(battleMove(e)) return;
   if(builderMove(e)) return;
   if(moveGrab(e)) return;
   const pt=pointers.get(e.pointerId); if(!pt) return;
   const evs=e.getCoalescedEvents?e.getCoalescedEvents():[e];
-  const p=cellPos(evs.length?evs[evs.length-1]:e); pt.x=p[0]; pt.y=p[1];
+  const p=battleClamp(cellPos(evs.length?evs[evs.length-1]:e)); pt.x=p[0]; pt.y=p[1];
 });
-function endPointer(e){ builderUp(e); releaseGrab(e); const pt=pointers.get(e.pointerId); if(pt){ pointers.delete(e.pointerId); if(pt.tool==='moat') finishMoat(pt); } if(isTouch) requestMotionPermission(); }
+function endPointer(e){ battleUp(e); builderUp(e); releaseGrab(e); const pt=pointers.get(e.pointerId); if(pt){ pointers.delete(e.pointerId); if(pt.tool==='moat') finishMoat(pt); } if(isTouch) requestMotionPermission(); }
 canvas.addEventListener('pointerleave',e=>{ if(e.pointerType==='mouse') builderHover(null); });
 canvas.addEventListener('wheel',e=>{ if(builderWheel(e)) e.preventDefault(); },{passive:false});
 canvas.addEventListener('pointerup',endPointer);
@@ -2064,16 +2121,16 @@ function placeCastle(x,y){
   return true;
 }
 function setCastleMode(on){
-  on = on && mode!=='castle';
+  on = on && !isBuilderMode();
   castleMode=on;
-  if(mode!=='castle'){ btnCastle.classList.toggle('on',on); btnCastle.setAttribute('aria-pressed',on); }
+  if(!isBuilderMode()){ btnCastle.classList.toggle('on',on); btnCastle.setAttribute('aria-pressed',on); }
   canvas.style.cursor = on ? 'copy' : '';
   if(on){ hint.textContent='Tap the sand where you want your castle'; hint.classList.remove('gone'); }
   else if(hint.textContent.startsWith('Tap the sand')) hint.classList.add('gone');
 }
 btnCastle.addEventListener('click',()=>{
   firstInteraction(); noteInteraction(); if(menuOpen) openMenu(false);
-  if(mode==='castle'){ openRibbon(!ribbonOpen); if(ribbonOpen) analytics.track('castle_ribbon_opened',{}); return; }
+  if(isBuilderMode()){ if(mode==='battle' && !(battle && battle.phase==='build')) return; openRibbon(!ribbonOpen); if(ribbonOpen) analytics.track('castle_ribbon_opened',{}); return; }
   setCastleMode(!castleMode);
 });
 addEventListener('keydown',e=>{ if(e.key==='Escape') setCastleMode(false); });
@@ -2604,8 +2661,9 @@ function releaseGrab(e){
 /* Castle Builder (sand tools, a ribbon of castle pieces, flags, moat). */
 /* Every session starts on the start screen with a fresh tray.          */
 /* ------------------------------------------------------------------ */
-let mode=null;                                                    // 'zen' | 'castle'
-function trayDepth(){ return mode==='castle' ? 1.3 : 1; }        // Castle Builder starts with deeper sand to build with
+let mode=null;                                                    // 'zen' | 'castle' | 'battle'
+function isBuilderMode(){ return mode==='castle' || mode==='battle'; }   // the modes with the castle-piece ribbon
+function trayDepth(){ return isBuilderMode() ? 1.3 : 1; }        // castle modes start with deeper sand to build with
 function bScale(){ return Math.min(1.5, Math.max(0.95, Math.min(natW||390,natH||390)/340)); }
 
 /* ---- castle pieces ---- */
@@ -2729,7 +2787,7 @@ function openRibbon(on){
   if(on){ setCastleMode(false); ribbonEl.hidden=false; requestAnimationFrame(()=>ribbonEl.classList.add('open')); }
   else { ribbonEl.classList.remove('open'); ribbonEl.classList.remove('placing'); setTimeout(()=>{ if(!ribbonOpen) ribbonEl.hidden=true; },180); selectPiece(null); placing=null; }
   document.body.classList.toggle('ribbon',on);
-  if(mode==='castle'){ btnCastle.classList.toggle('on',on); btnCastle.setAttribute('aria-expanded',on); }
+  if(isBuilderMode()){ btnCastle.classList.toggle('on',on); btnCastle.setAttribute('aria-expanded',on); }
   updateUndoBtn();
 }
 function selectPiece(k){
@@ -2742,7 +2800,7 @@ function selectPiece(k){
 rUndo.addEventListener('click',()=>{ noteInteraction(); undoLast(); });
 
 /* ---- placing pieces: touch to place, drag to lay walls, twist and pinch with a second finger ---- */
-function builderActive(){ return mode==='castle' && ribbonOpen; }
+function builderActive(){ return (mode==='castle' || (mode==='battle' && battle && battle.phase==='build')) && ribbonOpen; }
 function builderDown(e,p){
   if(!builderActive()) return false;
   if(placing && placing.id!==e.pointerId){
@@ -2849,8 +2907,9 @@ function gesturePieces(g){
   return [{kind:k, x:g.cur[0], y:g.cur[1], ang:selAng[k]||0, sc, o:pieceOpts(k)}];
 }
 function commitGesture(g){
-  if(g.kind==='flag'){ plantFlag(g.cur[0],g.cur[1]); return; }
-  const list=gesturePieces(g);
+  if(g.kind==='flag'){ if(battleOwns(g.cur)) plantFlag(g.cur[0],g.cur[1]); else toast('Plant flags on your own castle.'); return; }
+  let list=gesturePieces(g);
+  if(mode==='battle'){ const n=list.length; list=list.filter(pc=>battleOwns([pc.x,pc.y])); if(list.length<n) toast('Pieces past the middle line were left out. Build on your own side.'); if(!list.length) return; }
   if(g.kind==='wall' && list.length) selAng.wall=list[list.length-1].ang;
   if(g.kind==='stairs' && list.length) selAng.stairs=list[0].ang;
   buildPieces(list, g.kind);
@@ -3105,7 +3164,7 @@ function plantFlag(x,y){
   gl.bindFramebuffer(gl.FRAMEBUFFER,fA[0]); gl.readPixels(cx-1,cy-1,3,3,gl.RGBA,gl.FLOAT,px);
   let h=0; for(let k=0;k<9;k++) h=Math.max(h,px[k*4]);
   pushUndo();
-  flags.push({id:++flagSeq, x, y, zb:h, gh:null, col:FLAG_COLS[flagSeq%FLAG_COLS.length], st:'up', t:0, th:0, ph:Math.random()*6.283, fd:[1,0], alpha:1, rise:0});
+  flags.push({id:++flagSeq, x, y, zb:h, gh:null, col:(mode==='battle'&&battle) ? PLAYERS[battle.turn].lin : FLAG_COLS[flagSeq%FLAG_COLS.length], st:'up', t:0, th:0, ph:Math.random()*6.283, fd:[1,0], alpha:1, rise:0});
   flagSound(); try{ navigator.vibrate && navigator.vibrate(10); }catch(e){}
   analytics.track('castle_flag_planted', {flags:flags.length});
   noteInteraction();
@@ -3343,6 +3402,30 @@ function renderModeCards(){
         const ph= dmin<70 ? dmin : y/s;
         return [12+3.2*Math.cos(ph*2*Math.PI/13),...SAND,-1];
       });
+    } else if(m==='battle'){
+      // two castles facing each other across the tray, a shot in the air between them
+      const o={seed:5,phase:0,per:14};
+      const castleAt=(dx,dy)=>{ let p=0;
+        if(Math.abs(dx)<56&&Math.abs(dy)<40) p=Math.max(p,pieceH('level',dx*40/56,dy*40/40,1,o));
+        for(const tx of [-50,50]){ const t=pieceH('tower',dx-tx,dy+30,1.0,o); if(t>0) p=Math.max(p,t+1.0); }
+        const wv=pieceH('wall',dx*29/50,(dy+30)*1.2,1,o); if(wv>0) p=Math.max(p,wv+1.0);
+        const k=pieceH('tower',dx,dy+4,1.15,o); if(k>0) p=Math.max(p,k+1.0);
+        return p; };
+      shadeHF(cv,W,H,(x,y)=>{ const X=x/s, Y=y/s;
+        let p=Math.max(castleAt(X-120,Y-205), castleAt((X-480)*-1,(Y-100)*-1));
+        const cr=Math.hypot(X-430,Y-80); if(cr<26 && p>0) p=Math.max(0,p-(1-cr/26)*2.2);     // a crater in the far castle
+        return [12+p*12+1.5*Math.sin(X*0.05)*Math.cos(Y*0.07),...(p>0?PACKED:SAND),-1]; });
+      const c=cv.getContext('2d'); c.save(); c.scale(s,s);
+      c.setLineDash([3,9]); c.lineCap='round'; c.lineWidth=4; c.strokeStyle='rgba(255,246,232,0.75)';
+      c.beginPath(); c.moveTo(175,150); c.quadraticCurveTo(300,-60,410,70); c.stroke(); c.setLineDash([]);
+      const g=c.createRadialGradient(404,58,2,410,64,13); g.addColorStop(0,'#f0dcb6'); g.addColorStop(0.55,'#b38b5c'); g.addColorStop(1,'#6a4f34');
+      c.fillStyle='rgba(0,0,0,0.3)'; c.beginPath(); c.ellipse(418,92,12,8,0,0,7); c.fill();
+      c.fillStyle=g; c.beginPath(); c.arc(410,64,12,0,7); c.fill();
+      for(const [tx,ty,cl] of [[70,175,'#e0503f'],[170,175,'#e0503f'],[530,130,'#4f7fe6']]){
+        c.strokeStyle='#dcc196'; c.lineWidth=2.4; c.beginPath(); c.moveTo(tx,ty); c.lineTo(tx,ty-30); c.stroke();
+        c.fillStyle=cl; c.beginPath(); c.moveTo(tx+1,ty-30); c.quadraticCurveTo(tx+12,ty-34,tx+22,ty-28); c.lineTo(tx+22,ty-17); c.quadraticCurveTo(tx+12,ty-22,tx+1,ty-18); c.closePath(); c.fill();
+      }
+      c.restore();
     } else {
       const lvl=(x,y)=>{ const dx=Math.abs(x/s-300), dy=Math.abs(y/s-150); return dx<80&&dy<55; };
       shadeHF(cv,W,H,(x,y)=>{
@@ -3370,6 +3453,497 @@ function renderModeCards(){
       c.restore();
     }
   });
+}
+
+/* ------------------------------------------------------------------ */
+/* Castle Battle: two players on one device. Each builds a castle on   */
+/* their half of the tray and places a catapult, then they take turns  */
+/* launching wet sand balls (and a couple of water balloons). The first */
+/* to knock the other castle down wins.                                */
+/* Every change of game state goes through battleAct(action) with small */
+/* plain actions, so online play can later send the same actions to the */
+/* other device (battleNet) instead of passing the phone.              */
+/* ------------------------------------------------------------------ */
+const PLAYERS=[{key:'red',name:'Red',css:'#e0503f',rgb:[0.80,0.16,0.13]},{key:'blue',name:'Blue',css:'#4f7fe6',rgb:[0.14,0.31,0.72]}];
+PLAYERS.forEach(p=>{ p.lin=p.rgb.map(v=>Math.pow(v,2.2)); });
+const BALLOONS=2;            // water balloons per player
+const CASTLE_DOWN=0.3;       // a castle with 30% or less of its packed sand still standing has fallen
+const SETTLE_S=2.6;          // seconds to let the sand settle after a hit before the turn passes
+const AIM_TILT=0.62;         // how far heights lean up the screen when drawn (matches the flags)
+let battle=null;
+// Online play: send each action to the other device here, and pass the actions that arrive to applyBattle().
+const battleNet={ send(action){} };
+const bHud=$('#bHud'), bMsg=$('#bMsg'), bDone=$('#bDone'), bAmmo=$('#bAmmo'), bBal=$('#bBal'), bBanner=$('#bBanner');
+const bCover=$('#bCover'), bcTitle=$('#bcTitle'), bcText=$('#bcText'), bcGo=$('#bcGo'), bcAlt=$('#bcAlt');
+const bfx=$('#bfx'), bctx=bfx.getContext('2d');
+function sizeBfx(){ const r=Math.min(DPR,2); bfx.width=Math.round(innerWidth*r); bfx.height=Math.round(innerHeight*r); bfx._r=r; }
+sizeBfx(); addEventListener('resize',sizeBfx);
+
+// The tray is split across its long side. Red has the bottom (or left) half, Blue the top (or right).
+function splitAlongY(){ return NY>=NX; }
+function sideOf(x,y){ return splitAlongY() ? (y>=NY/2?0:1) : (x<NX/2?0:1); }
+function battleOwns(p){ return mode!=='battle' || !battle || sideOf(p[0],p[1])===battle.turn; }
+// where a player's half is on the screen right now ('bottom', 'top', 'left' or 'right')
+function sideWord(i){
+  const c = splitAlongY() ? [NX/2, i===0?NY*0.75:NY*0.25] : [i===0?NX*0.25:NX*0.75, NY/2];
+  const s=natToScreen(c[0]*cs,c[1]*cs), dx=s[0]-vw/2, dy=s[1]-vh/2;
+  return Math.abs(dy)>=Math.abs(dx) ? (dy>0?'bottom':'top') : (dx>0?'right':'left');
+}
+// while building, sand tools stop at the middle line
+function battleClamp(p){
+  if(mode!=='battle' || !battle || battle.phase!=='build') return p;
+  if(splitAlongY()) return [p[0], battle.turn===0 ? Math.max(p[1],NY/2+1) : Math.min(p[1],NY/2-1)];
+  return [battle.turn===0 ? Math.min(p[0],NX/2-1) : Math.max(p[0],NX/2+1), p[1]];
+}
+// packed castle sand standing above the tray's floor of loose sand, per half (cells^3)
+function castleVolumes(d){
+  d=d||readTex(fA[0]);
+  const base=cells.h0*trayDepth()*1.15, v=[0,0];
+  for(let y=0;y<NY;y++) for(let x=0;x<NX;x++){
+    const i=(y*NX+x)*4; if(waterM[i]>0.3) continue;            // moat banks are not castle
+    const w=Math.min(Math.max(d[i+3],0),d[i]); if(w>base) v[sideOf(x+0.5,y+0.5)]+=w-base;
+  }
+  return v;
+}
+function towerVolume(){ const R=24*bScale()/cs; return Math.PI*R*R*2.2*cells.h0; }
+function pname(i){ return PLAYERS[i].name; }
+
+function newBattle(){
+  return { phase:'intro', turn:0, shots:0, t0:performance.now(), tPhase:performance.now(), wind:[0,0], ammo:'ball',
+    aim:null, ball:null, settle:0, fx:[], prevV:[0,0], winner:null, h:null, last:null,
+    players:[0,1].map(()=>({cat:null, balloons:BALLOONS, v0:1, hp:1, shots:0, hits:0})) };
+}
+function setPhase(ph){
+  battle.phase=ph; battle.tPhase=performance.now();
+  document.body.className=document.body.className.replace(/\bbphase-\S+/g,'').trim();
+  document.body.classList.add('bphase-'+ph);
+}
+function startBattle(via){
+  battle=newBattle(); setPhase('intro');
+  bHud.hidden=false; updateAmmo(); hud();
+  analytics.track('battle_started', {via:via||'start_screen', mode_version:'battle-1'});
+  cover({ title:'Castle Battle',
+    text:`Two players, one phone. Red builds a castle on the ${sideWord(0)} half of the tray, then Blue builds on the ${sideWord(1)} half. Each of you places a catapult, then you take turns launching wet sand. Knock the other castle down to win.`,
+    go:'Red, start building', onGo:()=>battleAct({t:'build', p:0}), alt:'Back', onAlt:()=>showModes(true) });
+}
+function stopBattle(reason){
+  if(!battle) return;
+  if(battle.phase!=='over') analytics.track('battle_abandoned', {reason, phase:battle.phase, shots:battle.shots, duration_s:Math.round((performance.now()-battle.t0)/1000)});
+  battle=null;
+  document.body.className=document.body.className.replace(/\bbphase-\S+/g,'').trim();
+  bHud.hidden=true; bDone.hidden=true; bAmmo.hidden=true; bCover.hidden=true; bBanner.classList.remove('show');
+}
+function restartBattle(){ stopBattle('restart'); resetTray(); startBattle('play_again'); }
+
+let coverH={};
+function cover(o){
+  bcTitle.textContent=o.title; bcText.textContent=o.text; bcGo.textContent=o.go;
+  bcTitle.style.setProperty('--pc', o.color||'');
+  bcAlt.hidden=!o.alt; bcAlt.textContent=o.alt||'';
+  coverH=o; bCover.hidden=false;
+  setTimeout(()=>bcGo.focus({preventScroll:true}),30);
+}
+bcGo.addEventListener('click',()=>{ firstInteraction(); noteInteraction(); bCover.hidden=true; coverH.onGo&&coverH.onGo(); });
+bcAlt.addEventListener('click',()=>{ noteInteraction(); coverH.onAlt&&coverH.onAlt(); });
+function banner(text){ bBanner.textContent=text; bBanner.classList.add('show'); clearTimeout(banner.t); banner.t=setTimeout(()=>bBanner.classList.remove('show'),1300); }
+
+function randWind(){ const m=Math.pow(Math.random(),1.4), a=Math.random()*Math.PI*2; return [+(m*Math.cos(a)).toFixed(3), +(m*Math.sin(a)).toFixed(3)]; }
+function windWord(w){ const m=Math.hypot(w[0],w[1]); return m<0.15?'calm':m<0.45?'light':m<0.75?'breezy':'strong'; }
+
+/* ---- actions: the whole game moves forward through these ---- */
+function battleAct(a){ battleNet.send(a); applyBattle(a); }
+function applyBattle(a){
+  if(!battle) return;
+  const P=battle.players;
+  switch(a.t){
+    case 'build':{                                   // {p}: player p builds on their half
+      battle.turn=a.p; battle.buildT0=performance.now(); setPhase('build');
+      undoStack.length=0; updateUndoBtn(); openRibbon(true); selectPiece(null);
+      banner(`${pname(a.p)} builds`); break;
+    }
+    case 'built':{                                   // {p}: done building, next the catapult
+      const v=castleVolumes()[a.p];
+      analytics.track('battle_castle_built', {player:PLAYERS[a.p].key, build_s:Math.round((performance.now()-battle.buildT0)/1000), size_towers:+(v/towerVolume()).toFixed(1)});
+      openRibbon(false); undoStack.length=0; updateUndoBtn(); setPhase('catapult'); break;
+    }
+    case 'catapult':{                                // {p, x, y}: catapult placed (cells)
+      const en = splitAlongY() ? [NX/2, a.p===0?NY*0.25:NY*0.75] : [a.p===0?NX*0.75:NX*0.25, NY/2];
+      const dx=en[0]-a.x, dy=en[1]-a.y, l=Math.hypot(dx,dy)||1;
+      P[a.p].cat={x:a.x, y:a.y, f:[dx/l,dy/l], fireT:-1, arm:0};
+      flagSound(); try{ navigator.vibrate && navigator.vibrate(12); }catch(e){}
+      analytics.track('battle_catapult_placed', {player:PLAYERS[a.p].key});
+      if(a.p===0){
+        setPhase('handoff');
+        cover({ title:"Blue's turn to build", color:PLAYERS[1].css,
+          text:`Pass the phone to Blue. Build your castle on the ${sideWord(1)} half, then place your catapult.`,
+          go:"I'm Blue, start building", onGo:()=>battleAct({t:'build', p:1}) });
+      } else {
+        const v=castleVolumes(); P.forEach((pl,i)=>{ pl.v0=Math.max(v[i],1e-3); pl.hp=1; }); battle.prevV=v;
+        setPhase('ready');
+        cover({ title:'Castles ready!',
+          text:`Red fires first. Pull back anywhere on the tray and let go to launch: the further you pull, the further it flies. Sand balls smash walls. Water balloons soak a wider patch and slump it, and you each have ${BALLOONS}. Mind the wind.`,
+          go:'Start the battle', onGo:()=>battleAct({t:'turn', p:0, wind:randWind()}) });
+      }
+      break;
+    }
+    case 'turn':{                                    // {p, wind}: player p aims
+      battle.turn=a.p; battle.wind=a.wind; battle.ammo='ball'; battle.aim=null; setPhase('aim'); updateAmmo();
+      banner(`${pname(a.p)}'s turn`); break;
+    }
+    case 'fire': launch(a); break;                   // {p, ammo, dir, power}
+  }
+  hud();
+}
+
+/* ---- the HUD ---- */
+const WIND_SVG='<svg viewBox="0 0 24 24"><path d="M4 12h15M14 7l5 5-5 5"/></svg>';
+function hud(){
+  if(!battle) return;
+  const P=battle.players, ph=battle.phase, playing=!['intro','handoff','ready','over'].includes(ph);
+  [0,1].forEach(i=>{ const el=$('#bS'+i), pct=Math.round(P[i].hp*100);
+    el.classList.toggle('on', playing && battle.turn===i); el.classList.toggle('down', P[i].hp<=CASTLE_DOWN);
+    el.querySelector('u').style.width=pct+'%'; el.title=`${pname(i)}'s castle: ${pct}% standing`; });
+  const nm=pname(battle.turn);
+  let msg='', wind=false;
+  if(ph==='build') msg=`${nm}: build your castle on the ${sideWord(battle.turn)} half`;
+  else if(ph==='catapult') msg=`${nm}: tap your side to place your catapult`;
+  else if(ph==='aim'){ msg=`${nm}'s turn. Pull back and let go.`; wind=true; }
+  else if(ph==='flight'||ph==='settle'){ msg=`${nm}'s shot`; wind=true; }
+  else if(ph==='over') msg=`${pname(battle.winner)} wins!`;
+  else msg='Castle Battle';
+  bMsg.textContent=msg;
+  if(wind){
+    const w=battle.wind, ww=windWord(w), s=document.createElement('span');
+    s.style.cssText='display:inline-flex;align-items:center;gap:3px;color:var(--ink-dim)';
+    if(ww==='calm') s.textContent='· no wind';
+    else { const sv=[R0[0]*w[0]+R1[0]*w[1], R0[1]*w[0]+R1[1]*w[1]]; s.innerHTML='· wind '+WIND_SVG; s.lastChild.style.transform=`rotate(${Math.atan2(sv[1],sv[0])}rad)`; s.append(ww); }
+    bMsg.append(' ', s);
+  }
+  bDone.hidden = ph!=='build';
+  bAmmo.hidden = ph!=='aim';
+}
+function updateAmmo(){
+  if(!battle) return;
+  const n=battle.players[battle.turn].balloons;
+  if(battle.ammo==='balloon' && n<=0) battle.ammo='ball';
+  bAmmo.querySelectorAll('button').forEach(b=>{ const on=b.dataset.ammo===battle.ammo; b.setAttribute('aria-checked',on); if(b.dataset.ammo==='balloon') b.disabled=n<=0; });
+  bBal.textContent=`(${n})`;
+}
+bAmmo.querySelectorAll('button').forEach(b=>b.addEventListener('click',()=>{ if(!battle||battle.phase!=='aim') return; noteInteraction(); battle.ammo=b.dataset.ammo; updateAmmo(); }));
+bDone.addEventListener('click',()=>{
+  if(!battle||battle.phase!=='build') return; noteInteraction();
+  const v=castleVolumes()[battle.turn];
+  if(v<0.8*towerVolume()){ toast('Build a bit more first: at least a tower or a stretch of wall.'); return; }
+  battleAct({t:'built', p:battle.turn});
+});
+
+/* ---- input: place the catapult, pull back to aim, let go to fire ---- */
+function pullMax(){ return Math.max(110, 0.36*Math.min(natW,natH)); }       // css px of pull for a full-power shot
+function aimOf(a){ const dx=(a.s[0]-a.c[0])*cs, dy=(a.s[1]-a.c[1])*cs, l=Math.hypot(dx,dy); return l<14 ? null : {dir:[dx/l,dy/l], power:Math.min(1,l/pullMax())}; }
+function battleDown(e,p){
+  if(mode!=='battle'||!battle) return false;
+  const ph=battle.phase;
+  if(ph==='build'){
+    if(sideOf(p[0],p[1])!==battle.turn){ toast(`Build on your own side, ${pname(battle.turn)}.`); return true; }
+    return false;
+  }
+  if(ph==='catapult'){ placeCatapult(p); return true; }
+  if(ph==='aim' && !battle.aim){ battle.aim={id:e.pointerId, s:p.slice(), c:p.slice()}; try{ canvas.setPointerCapture(e.pointerId); }catch(err){} }
+  return true;                                       // the tray is hands-off while shots fly
+}
+function battleMove(e){
+  const a=battle&&battle.aim; if(!a||e.pointerId!==a.id) return false;
+  a.c=cellPos(e); const r=aimOf(a); if(r) battle.players[battle.turn].cat.f=r.dir;
+  return true;
+}
+function battleUp(e){
+  const a=battle&&battle.aim; if(!a||e.pointerId!==a.id) return;
+  battle.aim=null;
+  if(e.type==='pointercancel'||battle.phase!=='aim') return;
+  const r=aimOf(a);
+  if(!r){ toast('Pull back further, then let go to launch.'); return; }
+  battleAct({t:'fire', p:battle.turn, ammo:battle.ammo, dir:[+r.dir[0].toFixed(4),+r.dir[1].toFixed(4)], power:+r.power.toFixed(3)});
+}
+function placeCatapult(p){
+  const nm=pname(battle.turn), m=16*bScale()/cs;
+  if(sideOf(p[0],p[1])!==battle.turn){ toast(`Put your catapult on your own side, ${nm}.`); return; }
+  const x=Math.min(NX-m,Math.max(m,p[0])), y=Math.min(NY-m,Math.max(m,p[1]));
+  const d=readTex(fA[0]), i=(Math.floor(y)*NX+Math.floor(x))*4;
+  if(d[i]>cells.h0*trayDepth()+0.9*cells.h0){ toast('Put the catapult on flat sand next to your castle, not on top of it.'); return; }
+  battleAct({t:'catapult', p:battle.turn, x:+x.toFixed(2), y:+y.toFixed(2)});
+}
+
+/* ---- flight: a lobbed shot with a little wind, checked against the sand heights ---- */
+function heightAt(x,y){ const d=battle.h; if(!d) return 0; const ix=Math.min(NX-1,Math.max(0,Math.floor(x))), iy=Math.min(NY-1,Math.max(0,Math.floor(y))); return d[(iy*NX+ix)*4]; }
+function launchVel(power){
+  const L=Math.max(NX,NY), g=1.6*L, th=52*Math.PI/180, R=(0.12+0.98*power)*L, v=Math.sqrt(R*g/Math.sin(2*th));
+  return {g, vh:v*Math.cos(th), vz:v*Math.sin(th)};
+}
+function releasePoint(cat){ const s=bScale(); return [cat.x+cat.f[0]*8*s/cs, cat.y+cat.f[1]*8*s/cs]; }
+function launch(a){
+  const pl=battle.players[a.p], cat=pl.cat; if(!cat) return;
+  let ammo=a.ammo; if(ammo==='balloon'){ if(pl.balloons>0) pl.balloons--; else ammo='ball'; }
+  cat.f=a.dir.slice(); cat.fireT=0;
+  battle.h=readTex(fA[0]);                          // sand heights for this flight
+  const k=launchVel(a.power), rp=releasePoint(cat), g0=heightAt(cat.x,cat.y);
+  battle.ball={ x:rp[0], y:rp[1], z:g0+26*bScale()/cs, vx:a.dir[0]*k.vh, vy:a.dir[1]*k.vh, vz:k.vz, g:k.g,
+    wa:[battle.wind[0]*0.07*k.g, battle.wind[1]*0.07*k.g], ammo, p:a.p, power:a.power, t:0, gs:g0, r:(ammo==='balloon'?7:5.5)*bScale()/cs, trail:[] };
+  pl.shots++; battle.shots++; setPhase('flight');
+  battleSound('launch'); try{ navigator.vibrate && navigator.vibrate(18); }catch(e){}
+}
+function stepBattle(dt){
+  if(!battle) return;
+  for(const pl of battle.players){ const c=pl.cat; if(c && c.fireT>=0){ c.fireT+=dt; if(c.fireT>1.6) c.fireT=-1; } }
+  for(const f of battle.fx) f.t+=dt; battle.fx=battle.fx.filter(f=>f.t<1);
+  const b=battle.ball;
+  if(b && battle.phase==='flight'){
+    const n=8, h=dt/n;
+    for(let k=0;k<n;k++){
+      b.vx+=b.wa[0]*h; b.vy+=b.wa[1]*h; b.vz-=b.g*h;
+      b.x+=b.vx*h; b.y+=b.vy*h; b.z+=b.vz*h; b.t+=h;
+      if(b.x>=0&&b.y>=0&&b.x<NX&&b.y<NY){
+        const gnd=heightAt(b.x,b.y);
+        if(b.z-b.r*0.5<=gnd){ shotLands(b); return; }
+      } else if(b.z<0||b.t>8){ shotMisses(b); return; }
+    }
+    const inside=b.x>=0&&b.y>=0&&b.x<NX&&b.y<NY;
+    b.gs+=((inside?heightAt(b.x,b.y):b.gs)-b.gs)*Math.min(1,dt*8);
+    b.trail.push([b.x,b.y,b.z-b.gs]); if(b.trail.length>10) b.trail.shift();
+  }
+  if(battle.phase==='settle'){ battle.settle-=dt; if(battle.settle<=0) endShot(); }
+}
+function shotMisses(b){
+  battle.last={miss:true, ammo:b.ammo, power:b.power}; battle.ball=null;
+  setPhase('settle'); battle.settle=0.5; hud();
+}
+function shotLands(b){
+  const r=battleImpact(b.x,b.y,b.z,b.ammo,[b.vx,b.vy]);
+  battle.last={miss:false, ammo:b.ammo, power:b.power, side:sideOf(b.x,b.y), loosened:r.loosened};
+  battle.fx.push({x:b.x, y:b.y, t:0, kind:b.ammo});
+  battle.ball=null; setPhase('settle'); battle.settle=SETTLE_S; hud();
+}
+// What a shot does to the sand. A wet sand ball punches a crater: packed sand above the crater floor is cracked
+// loose and falls, and some is thrown out around it. A water balloon soaks and slumps a wider patch and pours
+// water that runs downhill. Loosened sand is ordinary sand to the physics, and castle parts that lose their
+// support crumble on their own (FS_PACK).
+function battleImpact(ix,iy,iz,ammo,vel){
+  const d=readTex(fA[0]), h0=cells.h0, sc=bScale(), water=ammo==='balloon';
+  const R=(water?40:27)*sc/cs;
+  const vl=Math.hypot(vel[0],vel[1])||1, vd=[vel[0]/vl, vel[1]/vl];
+  const x0=Math.max(0,Math.floor(ix-R*2.6)), x1=Math.min(NX-1,Math.ceil(ix+R*2.6)), y0=Math.max(0,Math.floor(iy-R*2.6)), y1=Math.min(NY-1,Math.ceil(iy+R*2.6));
+  let thrown=0, loosened=0; const fx=[];
+  for(let y=y0;y<=y1;y++) for(let x=x0;x<=x1;x++){
+    const r=Math.hypot(x+0.5-ix, y+0.5-iy); if(r>=R) continue;
+    const prof=Math.sqrt(1-(r/R)*(r/R)), i=(y*NX+x)*4, h=d[i], w=Math.min(Math.max(d[i+3],0),h);
+    let nw=w, nh=h;
+    if(water){
+      nw=Math.min(w, Math.max(0, w-2.8*h0*prof));
+      nh=h-Math.min(h*0.3, 0.12*h0*prof);
+    } else {
+      const zb=iz-R*1.0*prof;                        // the crater floor
+      if(h>zb){
+        nw=Math.min(w, Math.max(0,zb));
+        nh=h-Math.min(h*0.6, h-zb, R*1.2*prof)*0.55;
+      }
+    }
+    if(nw<w){ loosened+=w-nw; if(Math.random()<0.25) fx.push([x+0.5,y+0.5,Math.max(nh,iz-R*0.3)]); }
+    thrown+=h-nh; d[i]=nh; d[i+3]=Math.min(nw,nh); d[i+1]=0; d[i+2]=0;
+  }
+  // what was thrown out (and the ball itself) lands in a ring around the crater, mostly further along the flight
+  const ball=water?0:Math.PI*Math.pow(6*sc/cs,3);
+  const M=thrown+ball;
+  if(M>0){
+    let sw=0; const wt=[];
+    for(let y=y0;y<=y1;y++) for(let x=x0;x<=x1;x++){
+      const dx=x+0.5-ix, dy=y+0.5-iy, r=Math.hypot(dx,dy); if(r<0.6*R||r>2.5*R) continue;
+      const a=Math.exp(-Math.pow((r-1.35*R)/(0.45*R),2))*(1+0.7*(dx*vd[0]+dy*vd[1])/r);
+      if(a>1e-3){ wt.push([(y*NX+x)*4,a]); sw+=a; }
+    }
+    for(const [i,a] of wt) d[i]+=M*a/sw;
+  }
+  gl.bindTexture(gl.TEXTURE_2D,A[0]); gl.texSubImage2D(gl.TEXTURE_2D,0,0,0,NX,NY,gl.RGBA,gl.FLOAT,d);
+  castlesAny=true;
+  if(water){
+    // the balloon bursts: its water runs downhill and soaks into the sand
+    const wd=readTex(fWD[0]), s=R*0.55, V=Math.PI*R*R*0.4*h0;
+    for(let y=y0;y<=y1;y++) for(let x=x0;x<=x1;x++){
+      const r=Math.hypot(x+0.5-ix,y+0.5-iy), i=(y*NX+x)*4; if(r>2*R) continue;
+      wd[i]+=V/(Math.PI*s*s)*Math.exp(-r*r/(s*s)); if(r<R) wd[i+1]=1;
+    }
+    gl.bindTexture(gl.TEXTURE_2D,WD[0]); gl.texSubImage2D(gl.TEXTURE_2D,0,0,0,NX,NY,gl.RGBA,gl.FLOAT,wd);
+    waterAny=true;
+  }
+  // grains thrown up from the hit
+  const n=Math.min(water?120:500, 60+fx.length*4);
+  for(let j=0;j<n;j++){
+    const a=Math.random()*6.283, v=(water?10:20)+Math.random()*(water?25:55), src=fx.length&&Math.random()<0.6 ? fx[Math.floor(Math.random()*fx.length)] : [ix+Math.cos(a)*R*0.4, iy+Math.sin(a)*R*0.4, iz];
+    addPart(src[0],src[1],Math.max(src[2],h0*1.2), Math.cos(a)*v+vd[0]*12, Math.sin(a)*v+vd[1]*12, cells.G*(0.008+0.02*Math.random()), 1);
+  }
+  battleSound(water?'splash':'splat');
+  if(loosened>towerVolume()*0.05) setTimeout(crumbleSound,120);
+  try{ navigator.vibrate && navigator.vibrate(water?[20,40,20]:[30,30,60]); }catch(e){}
+  return {loosened};
+}
+function endShot(){
+  const v=castleVolumes(), P=battle.players, sh=battle.turn, foe=1-sh, L=battle.last||{miss:true};
+  const dmg=[0,1].map(i=>Math.max(0,(battle.prevV[i]-v[i])/P[i].v0));
+  battle.prevV=v; P.forEach((pl,i)=>{ pl.hp=Math.max(0,Math.min(1,v[i]/pl.v0)); });
+  const res = L.miss ? 'out' : dmg[foe]>0.01 ? 'hit' : dmg[sh]>0.01 ? 'own_castle' : 'miss';
+  if(res==='hit') P[sh].hits++;
+  analytics.track('battle_shot', { player:PLAYERS[sh].key, ammo:L.ammo||'ball', power:L.power, shot:battle.shots, result:res,
+    damage_pct:Math.round(dmg[foe]*100), foe_left_pct:Math.round(P[foe].hp*100), own_left_pct:Math.round(P[sh].hp*100), wind:windWord(battle.wind) });
+  const fn=pname(foe);
+  if(res==='hit') toast(dmg[foe]>0.12 ? `Smashing hit! ${fn}'s castle is at ${Math.round(P[foe].hp*100)}%.` : `Hit! ${fn}'s castle is at ${Math.round(P[foe].hp*100)}%.`);
+  else if(res==='own_castle') toast(`Oops, that hit your own castle.`);
+  else if(res==='out') toast('Over the edge of the tray.');
+  else toast('Missed.');
+  const down=[0,1].filter(i=>P[i].hp<=CASTLE_DOWN);
+  if(down.length){ finishBattle(down.length===2 ? (P[0].hp>=P[1].hp?0:1) : 1-down[0]); return; }
+  battleAct({t:'turn', p:foe, wind:randWind()});
+}
+function finishBattle(w){
+  const P=battle.players, l=1-w;
+  battle.winner=w; setPhase('over'); hud();
+  analytics.track('battle_over', { winner:PLAYERS[w].key, shots:battle.shots, duration_s:Math.round((performance.now()-battle.t0)/1000),
+    red_left_pct:Math.round(P[0].hp*100), blue_left_pct:Math.round(P[1].hp*100), red_hits:P[0].hits, blue_hits:P[1].hits });
+  banner(`${pname(w)} wins!`); battleSound('win');
+  setTimeout(()=>{ if(!battle||battle.phase!=='over') return;
+    cover({ title:`${pname(w)} wins!`, color:PLAYERS[w].css,
+      text:`${pname(l)}'s castle fell after ${battle.shots} shot${battle.shots===1?'':'s'}. ${pname(w)} landed ${P[w].hits} hit${P[w].hits===1?'':'s'}.`,
+      go:'Play again', onGo:()=>{ analytics.track('battle_play_again',{}); restartBattle(); }, alt:'Choose a mode', onAlt:()=>showModes(true) }); }, 1600);
+}
+function battleGridChanged(oN){
+  if(!battle) return;
+  for(const pl of battle.players) if(pl.cat){ pl.cat.x*=NX/oN[0]; pl.cat.y*=NY/oN[1]; }
+  if(battle.ball){ battle.ball=null; if(battle.phase==='flight'){ setPhase('settle'); battle.settle=0.3; battle.last={miss:true}; } }
+  battle.h=null;
+}
+
+/* ---- sounds ---- */
+function battleSound(kind){
+  if(!audio||!soundOn) return;
+  const ctx=audio.ctx, t=ctx.currentTime+0.005;
+  const noise=(dur,type,f,q,gain,decay)=>{ const n=Math.floor(ctx.sampleRate*dur), buf=ctx.createBuffer(1,n,ctx.sampleRate), c=buf.getChannelData(0);
+    for(let i=0;i<n;i++){ const s=i/ctx.sampleRate; c[i]=(Math.random()*2-1)*Math.min(1,s*200)*Math.exp(-s*decay); }
+    const src=ctx.createBufferSource(); src.buffer=buf; const fl=ctx.createBiquadFilter(); fl.type=type; fl.frequency.value=f; fl.Q.value=q;
+    const g=ctx.createGain(); g.gain.value=gain; src.connect(fl); fl.connect(g); g.connect(ctx.destination); src.start(t); return fl; };
+  const tone=(type,f0,f1,dur,gain)=>{ const o=ctx.createOscillator(); o.type=type; o.frequency.setValueAtTime(f0,t); o.frequency.exponentialRampToValueAtTime(f1,t+dur);
+    const g=ctx.createGain(); g.gain.setValueAtTime(0.0001,t); g.gain.exponentialRampToValueAtTime(gain,t+0.006); g.gain.exponentialRampToValueAtTime(0.0001,t+dur);
+    o.connect(g); g.connect(ctx.destination); o.start(t); o.stop(t+dur+0.02); };
+  if(kind==='launch'){ tone('triangle',140,60,0.12,0.35); const f=noise(0.45,'bandpass',500,0.8,0.35,6); f.frequency.setValueAtTime(400,t); f.frequency.exponentialRampToValueAtTime(1800,t+0.35); }
+  else if(kind==='splat'){ tone('sine',120,40,0.22,0.7); noise(0.3,'lowpass',800,0.5,0.6,14); }
+  else if(kind==='splash'){ tone('sine',180,70,0.12,0.4); noise(0.5,'highpass',900,0.4,0.25,8); waterSound(); }
+  else if(kind==='win'){ [523,659,784,1047].forEach((f,i)=>{ const o=ctx.createOscillator(), g=ctx.createGain(), s=t+i*0.11; o.type='triangle'; o.frequency.value=f;
+    g.gain.setValueAtTime(0.0001,s); g.gain.exponentialRampToValueAtTime(0.18,s+0.01); g.gain.exponentialRampToValueAtTime(0.0001,s+0.35); o.connect(g); g.connect(ctx.destination); o.start(s); o.stop(s+0.4); }); }
+}
+
+/* ---- drawing: the middle line, catapults, the aim, the shot in flight ---- */
+let bfxHad=false;
+function drawBattle(L){
+  const c=bctx;
+  if(!battle){ if(bfxHad){ c.setTransform(1,0,0,1,0,0); c.clearRect(0,0,bfx.width,bfx.height); bfxHad=false; } return; }
+  bfxHad=true;
+  const r=bfx._r; c.setTransform(1,0,0,1,0,0); c.clearRect(0,0,bfx.width,bfx.height);
+  const a=R0[0], b=R0[1], cc=R1[0], d=R1[1];
+  c.setTransform(a*r,b*r,cc*r,d*r,-(a*ROFF[0]+cc*ROFF[1])*r,-(b*ROFF[0]+d*ROFF[1])*r);   // draw in natural css px
+  const ph=battle.phase, W=NX*cs, H=NY*cs, ys=splitAlongY();
+  const U=[-R0[1],-R1[1]], K=AIM_TILT;
+  // the other player's half is shaded while one player builds or places a catapult
+  if(ph==='build'||ph==='catapult'){
+    c.fillStyle='rgba(16,12,8,0.34)';
+    if(ys) c.fillRect(0, battle.turn===0?0:H/2, W, H/2); else c.fillRect(battle.turn===0?W/2:0, 0, W/2, H);
+  }
+  c.save(); c.setLineDash([9,8]); c.lineWidth=2; c.strokeStyle=(ph==='build'||ph==='catapult'||ph==='intro'||ph==='handoff')?'rgba(255,246,232,0.6)':'rgba(255,246,232,0.16)';
+  c.beginPath(); if(ys){ c.moveTo(0,H/2); c.lineTo(W,H/2); } else { c.moveTo(W/2,0); c.lineTo(W/2,H); } c.stroke(); c.restore();
+  const Lz=Math.max(L[2],0.15);
+  battle.players.forEach((pl,i)=>{ if(pl.cat) drawCatapult(c,i,U,K,L,Lz); });
+  // aim guide: the start of the arc, and how hard you are pulling
+  if(battle.aim && ph==='aim'){
+    const ar=aimOf(battle.aim), cat=battle.players[battle.turn].cat;
+    const s0=[battle.aim.s[0]*cs, battle.aim.s[1]*cs], s1=[battle.aim.c[0]*cs, battle.aim.c[1]*cs];
+    c.save(); c.lineCap='round'; c.setLineDash([2,6]); c.lineWidth=2; c.strokeStyle='rgba(255,246,232,0.45)'; c.beginPath(); c.moveTo(...s0); c.lineTo(...s1); c.stroke(); c.restore();
+    c.beginPath(); c.arc(s1[0],s1[1],7,0,7); c.strokeStyle='rgba(255,246,232,0.7)'; c.lineWidth=1.5; c.stroke();
+    if(ar && cat){
+      const k=launchVel(ar.power), rp=releasePoint(cat), T=2*k.vz/k.g, z0=26*bScale()/cs;
+      c.fillStyle=PLAYERS[battle.turn].css;
+      for(let j=1;j<=12;j++){ const t=T*0.42*j/12; const x=rp[0]+ar.dir[0]*k.vh*t, y=rp[1]+ar.dir[1]*k.vh*t, z=z0+k.vz*t-0.5*k.g*t*t;
+        const p=[x*cs+U[0]*z*cs*K, y*cs+U[1]*z*cs*K]; c.globalAlpha=0.9*(1-j/14); c.beginPath(); c.arc(p[0],p[1],3.2*bScale(),0,7); c.fill(); }
+      c.globalAlpha=1;
+    }
+  }
+  const bl=battle.ball;
+  if(bl){
+    const sc=bScale(), zr=Math.max(0,bl.z-bl.gs), rb=(bl.ammo==='balloon'?7:5.5)*sc*(1+Math.min(0.5,zr/(Math.max(NX,NY)*0.6)));
+    // shadow straight below, fainter and wider the higher it flies
+    const sp=[bl.x*cs,bl.y*cs], hk=Math.min(1,zr*cs/220);
+    c.fillStyle=`rgba(0,0,0,${0.32*(1-0.6*hk)})`; c.beginPath(); c.ellipse(sp[0],sp[1],rb*(1+hk),rb*(1+hk)*0.8,0,0,7); c.fill();
+    if(bl.ammo!=='balloon'){ c.fillStyle='rgba(205,175,130,0.5)'; bl.trail.forEach((q,j)=>{ const p=[q[0]*cs+U[0]*q[2]*cs*K, q[1]*cs+U[1]*q[2]*cs*K]; c.beginPath(); c.arc(p[0],p[1],rb*0.35*(j+1)/bl.trail.length,0,7); c.fill(); }); }
+    const p=[sp[0]+U[0]*zr*cs*K, sp[1]+U[1]*zr*cs*K];
+    drawAmmo(c,p[0],p[1],rb,bl.ammo,U);
+  }
+  for(const f of battle.fx){
+    const p=[f.x*cs,f.y*cs], t=f.t, R=(f.kind==='balloon'?40:27)*bScale();
+    if(f.kind==='balloon'){
+      c.strokeStyle=`rgba(200,235,255,${0.7*(1-t)})`; c.lineWidth=2.5*(1-t)+0.5; c.beginPath(); c.arc(p[0],p[1],R*(0.4+1.4*t),0,7); c.stroke();
+      c.fillStyle=`rgba(220,242,255,${0.85*(1-t)})`;
+      for(let j=0;j<14;j++){ const a=j*0.449+0.3, rr=R*(0.3+1.6*t), z=Math.max(0,40*t-55*t*t)*bScale(); c.beginPath(); c.arc(p[0]+Math.cos(a)*rr+U[0]*z, p[1]+Math.sin(a)*rr+U[1]*z, 2.2*bScale(), 0, 7); c.fill(); }
+    } else {
+      c.fillStyle=`rgba(190,160,115,${0.35*(1-t)})`; c.beginPath(); c.arc(p[0],p[1],R*(0.6+1.2*t),0,7); c.fill();
+    }
+  }
+}
+function drawAmmo(c,x,y,rb,ammo,U){
+  const g=c.createRadialGradient(x-rb*0.35,y-rb*0.35,rb*0.1,x,y,rb);
+  if(ammo==='balloon'){ g.addColorStop(0,'#eaf8ff'); g.addColorStop(0.45,'#5ab6f2'); g.addColorStop(1,'#1d5c9a'); }
+  else { g.addColorStop(0,'#f0dcb6'); g.addColorStop(0.55,'#b38b5c'); g.addColorStop(1,'#6a4f34'); }
+  c.fillStyle=g; c.beginPath(); c.arc(x,y,rb,0,7); c.fill();
+  if(ammo==='balloon'){ c.fillStyle='#1d5c9a'; c.beginPath(); c.arc(x-U[0]*rb, y-U[1]*rb, rb*0.22, 0, 7); c.fill(); }
+}
+function drawCatapult(c,i,U,K,L,Lz){
+  const cat=battle.players[i].cat, s=bScale(), cx=cat.x*cs, cy=cat.y*cs, f=cat.f, sd=[-f[1],f[0]];
+  const P=(a,b,z)=>[cx+(f[0]*a+sd[0]*b)*s+U[0]*z*s*K, cy+(f[1]*a+sd[1]*b)*s+U[1]*z*s*K];
+  const S=(a,b,z)=>[cx+(f[0]*a+sd[0]*b)*s-L[0]/Lz*z*s, cy+(f[1]*a+sd[1]*b)*s-L[1]/Lz*z*s];
+  // arm: lies back when loaded, swings forward when it fires, then comes back for the next shot
+  const REST=Math.PI-0.32, FIRE=1.15;
+  let phi=REST;
+  if(battle.aim && battle.phase==='aim' && battle.turn===i){ const ar=aimOf(battle.aim); phi=REST+0.2*(ar?ar.power:0); }
+  if(cat.fireT>=0){ const t=cat.fireT; phi = t<0.12 ? REST+(FIRE-REST)*(t/0.12) : t<0.6 ? FIRE : FIRE+(REST-FIRE)*Math.min(1,(t-0.6)/0.8); }
+  const piv=[2,0,8], AL=26, end=[piv[0]+Math.cos(phi)*AL, 0, piv[2]+Math.sin(phi)*AL];
+  const loaded = !(cat.fireT>=0 && cat.fireT<1.4);
+  const seg=(p,q,w,col)=>{ c.beginPath(); c.moveTo(p[0],p[1]); c.lineTo(q[0],q[1]); c.lineWidth=w*s; c.strokeStyle=col; c.stroke(); };
+  c.save(); c.lineCap='round'; c.lineJoin='round';
+  // whose turn: a ring in the player's colour
+  if(battle.turn===i && (battle.phase==='aim'||battle.phase==='flight')){
+    c.save(); c.setLineDash([5,5]); c.strokeStyle=PLAYERS[i].css; c.globalAlpha=0.8; c.lineWidth=2;
+    c.beginPath(); c.arc(cx,cy,30*s,0,7); c.stroke(); c.restore();
+  }
+  // shadows on the sand
+  const sh='rgba(0,0,0,0.28)';
+  c.fillStyle=sh; c.beginPath(); [S(-18,-13,4),S(18,-13,4),S(18,13,4),S(-18,13,4)].forEach((p,k)=>k?c.lineTo(p[0],p[1]):c.moveTo(p[0],p[1])); c.closePath(); c.fill();
+  for(const b of [-11,11]) seg(S(6,b,6),S(6,b,24),3.5,sh);
+  seg(S(6,-12,24),S(6,12,24),4,sh); seg(S(...piv),S(end[0],0,end[2]),3.6,sh);
+  { const q=S(end[0],0,end[2]); c.fillStyle=sh; c.beginPath(); c.arc(q[0],q[1],5.5*s,0,7); c.fill(); }
+  const wood='#a26f3f', dark='#5f3d21', lite='#c08a56', tire='#3a2616';
+  // wheels and frame
+  for(const a of [-13,13]) for(const b of [-15,15]) seg(P(a-5,b,4),P(a+5,b,4),4.5,tire);
+  for(const a of [-13,13]) seg(P(a,-15,4),P(a,15,4),2,dark);
+  for(const b of [-11,11]) seg(P(-18,b,6),P(18,b,6),4,wood);
+  for(const a of [-16,14]) seg(P(a,-11,6),P(a,11,6),3.5,dark);
+  // uprights, braces and the crossbar the arm strikes
+  for(const b of [-11,11]){ seg(P(6,b,6),P(6,b,24),3.5,wood); seg(P(-8,b,6),P(6,b,20),2.5,dark); }
+  seg(P(...piv),P(piv[0],-11,piv[2]),3,dark); seg(P(...piv),P(piv[0],11,piv[2]),3,dark);
+  const armFront = Math.sin(phi)*U[1] < 0;           // draw the arm before or after the crossbar, whichever is nearer
+  const drawArm=()=>{ seg(P(...piv),P(end[0],0,end[2]),3.6,lite);
+    const q=P(end[0],0,end[2]); c.fillStyle=dark; c.beginPath(); c.arc(q[0],q[1],5.5*s,0,7); c.fill();
+    if(loaded){ const am = battle.turn===i && battle.phase==='aim' ? battle.ammo : 'ball'; drawAmmo(c,q[0],q[1],4*s,am,U); } };
+  if(!armFront) drawArm();
+  seg(P(6,-13,24),P(6,13,24),4.2,dark);
+  if(armFront) drawArm();
+  // a pennant in the player's colour
+  const pb=P(-15,-12,6), pt=P(-15,-12,38); seg(pb,pt,1.6,'#d9c39a');
+  const w=Math.sin(simTime*5+i)*2;
+  c.fillStyle=PLAYERS[i].css; c.beginPath(); c.moveTo(pt[0],pt[1]); const f1=P(-15,-12-14,33+w*0.4), f2=P(-15,-12,28); c.lineTo(f1[0],f1[1]); c.lineTo(f2[0],f2[1]); c.closePath(); c.fill();
+  c.restore();
 }
 
 /* ---- the start screen and switching modes ---- */
@@ -3458,13 +4032,14 @@ btnHome.addEventListener('click',()=>{ noteInteraction(); showModes(true); });
 addEventListener('keydown',e=>{ if(e.key==='Escape' && mode && !modesEl.hidden && !modesEl.classList.contains('gone')) showModes(false); });
 function applyMode(m, via){
   const prev=mode; mode=m;
-  document.body.classList.toggle('mode-castle',m==='castle'); document.body.classList.toggle('mode-zen',m==='zen');
+  if(prev==='battle') stopBattle(m===prev ? 'restart' : 'left');
+  document.body.classList.toggle('mode-castle',m==='castle'); document.body.classList.toggle('mode-zen',m==='zen'); document.body.classList.toggle('mode-battle',m==='battle');
   btnHome.hidden=false;
   if(menuOpen) openMenu(false); if(ribbonOpen) openRibbon(false); setCastleMode(false);
   // a fresh tray: new sand, no garden items, castles, flags or water
   items=[]; itemDrags.clear(); undoSnap=null; hideUndo(); updateGardenUI();
   resetTray();
-  if(m==='castle'){
+  if(isBuilderMode()){
     btnCastle.title='Castle: open the castle pieces'; btnCastle.removeAttribute('aria-pressed'); btnCastle.setAttribute('aria-expanded','false'); btnCastle.setAttribute('aria-controls','ribbon');
     hint.textContent = isTouch ? 'Tap Castle to start building' : 'Click Castle to start building. Arrow keys tilt, Space shakes.';
   } else {
@@ -3474,6 +4049,7 @@ function applyMode(m, via){
   hint.classList.remove('gone'); clearTimeout(applyMode.t); applyMode.t=setTimeout(()=>{ if(!castleMode) hint.classList.add('gone'); },5000);
   analytics.track('mode_selected', {mode:m, from:prev||'start', via:via||'start_screen'});
   showModes(false);
+  if(m==='battle') startBattle(via);
 }
 // builder state that lives in the sand grid: clear it, or carry it over when the grid is resized
 function clearBuilder(){ flags=[]; undoStack.length=0; updateUndoBtn(); clearWater(); placing=null; ghostDirty=true; }
@@ -3490,6 +4066,7 @@ function builderGridChanged(old, kept){
       gl.bindTexture(gl.TEXTURE_2D,WD[0]); gl.texSubImage2D(gl.TEXTURE_2D,0,0,0,NX,NY,gl.RGBA,gl.FLOAT,d);
     }
     for(const f of flags){ f.x*=NX/oN[0]; f.y*=NY/oN[1]; f.zb*=old.cs/cs; f.gh=null; }
+    battleGridChanged(oN);
   } else { flags=[]; waterAny=false; waterSrc=[]; }
   wdOld=null; uploadWater();
 }
@@ -3569,6 +4146,13 @@ window.__sand = {
     get water(){ return {any:waterAny, slope:wS.slice(), wl:cells.wl}; }, readW(){ return waterM; }, readWD(){ return readTex(fWD[0]); }, readB(){ return readTex(fB[0]); },
     showModes(on){ showModes(on!==false); },
   },
+  battle:{
+    get state(){ return battle; }, act(a){ battleAct(a); }, volumes(){ return castleVolumes(); }, sideOf:(x,y)=>sideOf(x,y),
+    done(){ bDone.click(); }, go(){ bcGo.click(); }, ammo(k){ bAmmo.querySelector(`[data-ammo="${k}"]`).click(); },
+    catapult(x,y){ placeCatapult([x,y]); }, impact(x,y,z,ammo){ return battleImpact(x,y,z,ammo||'ball',[0,-1]); },
+    fire(dx,dy,power){ const l=Math.hypot(dx,dy)||1; battleAct({t:'fire', p:battle.turn, ammo:battle.ammo, dir:[dx/l,dy/l], power}); },
+    aim(x,y,x2,y2){ battle.aim={id:'t', s:[x,y], c:[x2,y2]}; }, release(){ battleUp({pointerId:'t', type:'pointerup'}); },
+  },
   garden:{
     add(kind,x,y,how){ return addItem(kind,x,y,how||'api'); }, get items(){ return items; }, KINDS,
     menu(on){ openMenu(on!==false); }, get variant(){ return analytics.variant; }, get events(){ return analytics.log; },
@@ -3580,7 +4164,7 @@ setup(false);
 renderThumbs();
 clearWater();
 renderPieceThumbs();
-{ const hm=(location.hash.match(/mode=(zen|castle)/)||[])[1];
+{ const hm=(location.hash.match(/mode=(zen|castle|battle)/)||[])[1];
   if(hm) applyMode(hm,'link'); else showModes(true); }
 setTimeout(renderModeCards, 30);
 let last=performance.now(), simTime=0, frameN=0, flowLevel=0, massInfo=[0,0];
@@ -3632,6 +4216,7 @@ function frame(now){
   drawItems(L,px);
   drawFlags(L);
   drawGhost();
+  drawBattle(L);
   probeFlags();
 
   // ---- particles ----
@@ -3684,6 +4269,8 @@ function simFrame(dt){
   let R = Rover ? Rover.slice() : ((motion.gotOrient||motion.gotMotion) && !padActive ? deviceReaction() : null);
   if(!R) R=simulatedReaction(dt);
   else if(shakeT>0){ const s=simulatedReaction(dt); R=[R[0]+s[0]-0,R[1]+s[1],R[2]]; }
+  // Castle Battle is played on a level tray: tilting or shaking the phone would knock the castles down
+  if(mode==='battle' && !Rover){ R=[0,0,9.81]; shakeT=0; }
   for(let i=0;i<3;i++){ Rf[i]+= (R[i]-Rf[i])*Math.min(1,dt*40); Rmid[i]+=(Rf[i]-Rmid[i])*Math.min(1,dt*12); Rlow[i]+=(R[i]-Rlow[i])*Math.min(1,dt*3); }
   // shaking = vibration above ~2 Hz; a deliberate tilt (even a quick one) must not fluidize the sand
   const jerk=Math.hypot(Rf[0]-Rmid[0],Rf[1]-Rmid[1],Rf[2]-Rmid[2]);
@@ -3695,6 +4282,7 @@ function simFrame(dt){
   // ---- tools ----
   buildTools(dt);
   gardenStep(dt);
+  stepBattle(dt);
   flushWater(); stepWater(dt); stepFlags(dt);
   run(progs.tool, fTool, u=>{
     gl.uniform2i(u.uN,NX,NY); gl.uniform1i(u.uSegN,segN);
@@ -3708,7 +4296,7 @@ function simFrame(dt){
       gl.uniform2i(u.uN,NX,NY); bindTex(progs.pack,'uA',0,A[0]); bindTex(progs.pack,'uTool',1,ToolT);
       gl.uniform1f(u.uDt,dt); gl.uniform1f(u.uH0,cells.h0); gl.uniform1f(u.uShake,Math.max(0,shake-0.12)); gl.uniform1f(u.uTilt,tilt);
       gl.uniform1f(u.uSeed,(simTime*3.7)%53.); gl.uniform2f(u.uDown,down[0],down[1]);
-      bindTex(progs.pack,'uW',2,WatT); bindTex(progs.pack,'uWD',3,WD[0]); gl.uniform1i(u.uHasW,waterAny?1:0); gl.uniform1f(u.uTime,simTime); gl.uniform1f(u.uRemnant,mode==='castle'?0:1);
+      bindTex(progs.pack,'uW',2,WatT); bindTex(progs.pack,'uWD',3,WD[0]); gl.uniform1i(u.uHasW,waterAny?1:0); gl.uniform1f(u.uTime,simTime); gl.uniform1f(u.uRemnant,isBuilderMode()?0:1);
     });
     A.reverse(); fA.reverse();
   }
