@@ -8,6 +8,20 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="theme-color" content="#1a1612">
 <title>Sandtray</title>
+<meta name="description" content="A real-time sand tray for your phone. Draw and rake the sand, tilt it to make it slide, build sand castles and zen gardens.">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="Sandtray">
+<meta property="og:title" content="Sandtray: a sand tray for your phone">
+<meta property="og:description" content="Draw and rake real-feeling sand, tilt your phone to make it slide, and build sand castles with moats and flags.">
+<meta property="og:url" content="https://jaredmullaney-ui.github.io/Sand/">
+<meta property="og:image" content="https://jaredmullaney-ui.github.io/Sand/share/og-image.jpg">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="A sand castle with towers, flags and a water-filled moat in Sandtray">
+<meta name="twitter:card" content="summary_large_image">
+<link rel="icon" href="icons/favicon.svg" type="image/svg+xml">
+<link rel="icon" href="icons/icon-32.png" type="image/png" sizes="32x32">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
 <style>
 /* Layout: one full-bleed sand canvas; small smoked-glass controls float above it. Single dark look by design. */
 :root{
@@ -82,6 +96,29 @@ body.mode-castle #btnGarden,body.mode-zen #btnCastle{display:none;}
 #btnHome:hover,#btnHome:focus-visible{color:var(--ink);background:var(--glass-hi);outline:none;}
 #btnHome svg{width:19px;height:19px;stroke:currentColor;fill:none;stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round;}
 #btnHome[hidden]{display:none;}
+/* Share: a round button top-right (mirrors Home) opens a card with a picture of the tray */
+#btnShare{position:fixed;z-index:4;right:calc(12px + env(safe-area-inset-right,0px));top:calc(14px + env(safe-area-inset-top,0px));width:40px;height:40px;border-radius:50%;appearance:none;border:1px solid var(--line);background:var(--glass);-webkit-backdrop-filter:blur(14px);backdrop-filter:blur(14px);color:var(--ink-dim);display:flex;align-items:center;justify-content:center;cursor:pointer;touch-action:manipulation;padding:0;transition:color .2s,background .2s,opacity .2s;}
+#btnShare:hover,#btnShare:focus-visible{color:var(--ink);background:var(--glass-hi);outline:none;}
+#btnShare svg{width:19px;height:19px;stroke:currentColor;fill:none;stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round;}
+#btnShare.busy{opacity:.5;pointer-events:none;}
+#btnShare[hidden]{display:none;}
+#share{position:fixed;inset:0;z-index:25;display:flex;align-items:center;justify-content:center;padding:calc(16px + env(safe-area-inset-top,0px)) 16px calc(16px + env(safe-area-inset-bottom,0px));box-sizing:border-box;background:rgba(14,11,8,.55);-webkit-backdrop-filter:blur(3px);backdrop-filter:blur(3px);}
+#share[hidden]{display:none;}
+#share .scard{position:relative;width:100%;max-width:380px;max-height:100%;overflow-y:auto;box-sizing:border-box;display:flex;flex-direction:column;align-items:center;gap:10px;padding:16px 16px 14px;border-radius:22px;border:1px solid var(--line);background:var(--glass-hi);-webkit-backdrop-filter:blur(22px) saturate(1.3);backdrop-filter:blur(22px) saturate(1.3);box-shadow:0 14px 40px rgba(0,0,0,.45);text-align:center;}
+#share .sprev{display:flex;justify-content:center;width:100%;}
+#share img{display:block;max-width:100%;max-height:min(40vh,320px);border-radius:14px;box-shadow:0 6px 20px rgba(0,0,0,.35);}
+#share h2{margin:4px 0 0;font:700 19px/1.2 var(--font);color:var(--ink);}
+#share p{margin:0;font:500 13.5px/1.45 var(--font);color:var(--ink-dim);}
+#share .sbtns{display:flex;flex-direction:column;gap:8px;width:100%;margin-top:4px;}
+#share .sbtns button{appearance:none;display:flex;align-items:center;justify-content:center;gap:8px;width:100%;border:1px solid var(--line);background:transparent;color:var(--ink);font:600 14px/1 var(--font);padding:13px 16px;border-radius:999px;cursor:pointer;touch-action:manipulation;}
+#share .sbtns button svg{width:17px;height:17px;stroke:currentColor;fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round;}
+#share .sbtns button.pri{background:var(--accent);border-color:var(--accent);color:#2a1f14;font-weight:700;}
+#share .sbtns button:focus-visible{outline:2px solid var(--accent);outline-offset:2px;}
+#share .sbtns button[hidden]{display:none;}
+#share .sstatus{min-height:18px;font-size:12.5px;}
+#shX{position:absolute;right:8px;top:8px;width:34px;height:34px;border-radius:50%;appearance:none;border:0;background:rgba(20,16,12,.5);color:var(--ink);display:flex;align-items:center;justify-content:center;cursor:pointer;padding:0;z-index:1;}
+#shX svg{width:16px;height:16px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;}
+#shX:focus-visible{outline:2px solid var(--accent);}
 /* Castle piece ribbon: a glass strip above the tool bar */
 #ribbon{position:fixed;z-index:5;left:50%;bottom:calc(80px + env(safe-area-inset-bottom,0px));transform:translate(-50%,10px);width:min(600px,calc(100vw - 16px));box-sizing:border-box;padding:8px 8px 8px;border-radius:22px;background:var(--glass-hi);-webkit-backdrop-filter:blur(22px) saturate(1.3);backdrop-filter:blur(22px) saturate(1.3);border:1px solid var(--line);box-shadow:0 14px 40px rgba(0,0,0,.4);opacity:0;transition:opacity .18s,transform .18s;}
 #ribbon.open{opacity:1;transform:translate(-50%,0);}
@@ -128,9 +165,9 @@ body.ribbon #pad{bottom:calc(196px + env(safe-area-inset-bottom,0px));}
 #mTip[hidden]{display:none;}
 /* Feedback: a quiet link on the start screen opens a small form; answers go to a PostHog survey */
 #modes .mlinks{display:flex;flex-wrap:wrap;justify-content:center;gap:2px 6px;}
-#mFb{appearance:none;border:0;background:transparent;display:inline-flex;align-items:center;gap:6px;margin-top:2px;padding:8px 12px;border-radius:999px;font:500 12.5px/1 var(--font);color:var(--ink-dim);cursor:pointer;touch-action:manipulation;transition:color .2s,background .2s;}
-#mFb svg{width:15px;height:15px;stroke:currentColor;fill:none;stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round;}
-#mFb:hover,#mFb:focus-visible{color:var(--accent);background:rgba(240,200,140,.1);outline:none;}
+#mFb,#mShare{appearance:none;border:0;background:transparent;display:inline-flex;align-items:center;gap:6px;margin-top:2px;padding:8px 12px;border-radius:999px;font:500 12.5px/1 var(--font);color:var(--ink-dim);cursor:pointer;touch-action:manipulation;transition:color .2s,background .2s;}
+#mFb svg,#mShare svg{width:15px;height:15px;stroke:currentColor;fill:none;stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round;}
+#mFb:hover,#mFb:focus-visible,#mShare:hover,#mShare:focus-visible{color:var(--accent);background:rgba(240,200,140,.1);outline:none;}
 #fb{position:fixed;inset:0;z-index:30;display:flex;align-items:center;justify-content:center;padding:calc(16px + env(safe-area-inset-top,0px)) 16px calc(16px + env(safe-area-inset-bottom,0px));box-sizing:border-box;background:rgba(14,11,8,.5);}
 #fb[hidden]{display:none;}
 #fb form{width:100%;max-width:400px;max-height:100%;overflow-y:auto;box-sizing:border-box;display:flex;flex-direction:column;gap:12px;padding:20px;border-radius:22px;border:1px solid var(--line);background:var(--glass-hi);-webkit-backdrop-filter:blur(22px) saturate(1.3);backdrop-filter:blur(22px) saturate(1.3);box-shadow:0 14px 40px rgba(0,0,0,.45);-webkit-user-select:text;user-select:text;touch-action:auto;}
@@ -191,6 +228,7 @@ body.mode-battle.bphase-build #toast{top:calc(126px + env(safe-area-inset-top,0p
 #bCover button{appearance:none;border:1px solid var(--line);background:transparent;color:var(--ink);font:600 14px/1 var(--font);padding:12px 18px;border-radius:999px;cursor:pointer;touch-action:manipulation;}
 #bCover #bcGo{background:var(--accent);border-color:var(--accent);color:#2a1f14;font-weight:700;}
 #bCover button[hidden]{display:none;}
+#bCover #bcShare:not([hidden]){display:inline-flex;align-items:center;gap:6px;}
 @media (prefers-reduced-motion:reduce){#bBanner{transition:none}}
 </style>
 </head>
@@ -198,6 +236,7 @@ body.mode-battle.bphase-build #toast{top:calc(126px + env(safe-area-inset-top,0p
 <canvas id="sand" aria-label="Sand tray. Draw with your finger, tilt the device to move the sand."></canvas>
 <canvas id="ghost" aria-hidden="true"></canvas>
 <button id="btnHome" hidden title="Choose a mode" aria-label="Choose a mode"><svg viewBox="0 0 24 24"><rect x="4" y="4" width="6.5" height="6.5" rx="1.6"/><rect x="13.5" y="4" width="6.5" height="6.5" rx="1.6"/><rect x="4" y="13.5" width="6.5" height="6.5" rx="1.6"/><rect x="13.5" y="13.5" width="6.5" height="6.5" rx="1.6"/></svg></button>
+<button id="btnShare" hidden title="Share" aria-label="Share a picture of your tray"><svg viewBox="0 0 24 24"><path d="M12 14.5V3.5M8 7l4-3.8L16 7"/><path d="M8.5 10H7a2 2 0 0 0-2 2v7a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-7a2 2 0 0 0-2-2h-1.5"/></svg></button>
 <div id="hint">Draw with your finger. Tilt or shake your phone.</div>
 <div id="toast" role="status"></div>
 <div id="pad" hidden aria-label="Tilt pad"><div id="puck"></div><span>Tilt</span></div>
@@ -255,6 +294,21 @@ body.mode-battle.bphase-build #toast{top:calc(126px + env(safe-area-inset-top,0p
   <div class="mlinks">
     <a id="mTip" hidden target="_blank" rel="noopener"><svg viewBox="0 0 24 24"><path d="M5 9h11v5a5 5 0 0 1-5 5h-1a5 5 0 0 1-5-5z"/><path d="M16 10.5h1.5a2.5 2.5 0 0 1 0 5H16"/><path d="M9 3.5c-.6.8.6 1.6 0 2.5M12.5 3.5c-.6.8.6 1.6 0 2.5"/></svg>Enjoying Sandtray? Buy me a coffee</a>
     <button id="mFb" type="button"><svg viewBox="0 0 24 24"><path d="M4 5.5h16v10H9.5L5 19.5v-4H4z"/><path d="M8 9.5h8M8 12.5h5"/></svg>Send feedback</button>
+    <button id="mShare" type="button"><svg viewBox="0 0 24 24"><path d="M12 14.5V3.5M8 7l4-3.8L16 7"/><path d="M8.5 10H7a2 2 0 0 0-2 2v7a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-7a2 2 0 0 0-2-2h-1.5"/></svg>Share Sandtray</button>
+  </div>
+</div>
+<div id="share" role="dialog" aria-modal="true" aria-labelledby="shTitle" hidden>
+  <div class="scard">
+    <button id="shX" type="button" aria-label="Close"><svg viewBox="0 0 24 24"><path d="M6.5 6.5l11 11M17.5 6.5l-11 11"/></svg></button>
+    <div class="sprev"><img id="shImg" alt="A picture of your tray"></div>
+    <h2 id="shTitle">Share your tray</h2>
+    <p id="shText"></p>
+    <div class="sbtns">
+      <button id="shPic" type="button" class="pri"><svg viewBox="0 0 24 24"><path d="M12 14.5V3.5M8 7l4-3.8L16 7"/><path d="M8.5 10H7a2 2 0 0 0-2 2v7a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-7a2 2 0 0 0-2-2h-1.5"/></svg>Share picture</button>
+      <button id="shSave" type="button"><svg viewBox="0 0 24 24"><path d="M12 3.5v11M7.5 10l4.5 4.5 4.5-4.5"/><path d="M5 17v2.5h14V17"/></svg>Save picture</button>
+      <button id="shLink" type="button"><svg viewBox="0 0 24 24"><path d="M10 14a4 4 0 0 0 5.7 0l3-3a4 4 0 0 0-5.7-5.7l-1 1"/><path d="M14 10a4 4 0 0 0-5.7 0l-3 3a4 4 0 0 0 5.7 5.7l1-1"/></svg><span>Copy link</span></button>
+    </div>
+    <p class="sstatus" id="shStatus" role="status"></p>
   </div>
 </div>
 <div id="fb" role="dialog" aria-modal="true" aria-labelledby="fbTitle" hidden>
@@ -283,7 +337,7 @@ body.mode-battle.bphase-build #toast{top:calc(126px + env(safe-area-inset-top,0p
 </div>
 <div id="bBanner" aria-hidden="true"></div>
 <div id="bCover" role="dialog" aria-modal="true" aria-labelledby="bcTitle" hidden>
-  <div class="bcard"><h2 id="bcTitle"></h2><p id="bcText"></p><div class="bcbtns"><button id="bcAlt" hidden></button><button id="bcGo"></button></div></div>
+  <div class="bcard"><h2 id="bcTitle"></h2><p id="bcText"></p><div class="bcbtns"><button id="bcShare" hidden>Share</button><button id="bcAlt" hidden></button><button id="bcGo"></button></div></div>
 </div>
 <div id="undo" role="status" hidden><span>Cleared</span><button><svg viewBox="0 0 24 24"><path d="M9 14L4 9l5-5"/><path d="M4 9h10a6 6 0 0 1 0 12h-3"/></svg>Undo</button></div>
 <script>
@@ -1744,7 +1798,7 @@ function newPointer(x,y,tl){ return {x,y,hist:[[x,y,x,y]],last:[x,y],vx:0,vy:0,t
 function cellPos(e){ const r=canvas.getBoundingClientRect(); const n=toNat(e.clientX-r.left, e.clientY-r.top); return [n[0]/cs, n[1]/cs]; }
 canvas.addEventListener('pointerdown',e=>{
   e.preventDefault();
-  noteInteraction();
+  noteInteraction(); trayChanged();
   if(menuOpen){ openMenu(false); return; }          // a tap outside the garden menu just closes it
   const p=cellPos(e);
   if(battleDown(e,p)){ firstInteraction(); return; }
@@ -1762,6 +1816,7 @@ canvas.addEventListener('pointermove',e=>{
   const pt=pointers.get(e.pointerId); if(!pt) return;
   const evs=e.getCoalescedEvents?e.getCoalescedEvents():[e];
   const p=battleClamp(cellPos(evs.length?evs[evs.length-1]:e)); pt.x=p[0]; pt.y=p[1];
+  if(pt.moat && pt.moat.path){ const l=pt.moat.path[pt.moat.path.length-1]; if(Math.hypot(p[0]-l[0],p[1]-l[1])*cs>=3) pt.moat.path.push(p.slice()); }
 });
 function endPointer(e){ battleUp(e); builderUp(e); releaseGrab(e); const pt=pointers.get(e.pointerId); if(pt){ pointers.delete(e.pointerId); if(pt.tool==='moat') finishMoat(pt); } if(isTouch) requestMotionPermission(); }
 canvas.addEventListener('pointerleave',e=>{ if(e.pointerType==='mouse') builderHover(null); });
@@ -2342,7 +2397,7 @@ function addItem(kind,x,y,how){
   const it=newItem(kind,x,y); clampItem(it);
   items.push(it); separate(it,true); clampItem(it);
   if(how==='tap'){ it.liftFrom=halfOf(it)*0.5; it.lift=it.liftFrom; it.drop=0.22; it.alpha=0; it.fadeIn=1; }
-  noteInteraction();
+  noteInteraction(); trayChanged();
   if(followup && !followup.sent) followup.placed++;
   hideUndo();
   analytics.track('garden_item_placed', {item:kind, via:how||'api', items:items.length});
@@ -2586,7 +2641,7 @@ function finishCarry(cx,cy,ok){
   separate(it,true); clampItem(it);
   openMenu(false);
   dropSound(it.kind); try{ navigator.vibrate && navigator.vibrate(12); }catch(e){}
-  noteInteraction(); if(followup && !followup.sent) followup.placed++;
+  noteInteraction(); trayChanged(); if(followup && !followup.sent) followup.placed++;
   hideUndo();
   analytics.track('garden_item_placed', {item:it.kind, via:'drag', items:liveItems().length});
   updateGardenUI();
@@ -2612,7 +2667,7 @@ function doClear(n){
   for(const it of items){ if(it.st!=='fall'){ it.st='fade'; } }
   for(const [id,d] of itemDrags) itemDrags.delete(id);
   openMenu(false);
-  analytics.track('garden_clear_done', {items:n});
+  analytics.track('garden_clear_done', {items:n}); trayChanged();
   startFollowup(n);
   updateGardenUI();
 }
@@ -2626,7 +2681,7 @@ undoEl.querySelector('button').addEventListener('click',()=>{
   if(!undoSnap) return;
   items=items.filter(it=>it.st!=='fade');
   for(const s of undoSnap){ const it=newItem(s.kind,s.x,s.y); it.rot=s.rot; it.alpha=0; it.fadeIn=1; items.push(it); }
-  analytics.track('garden_clear_undone', {items:undoSnap.length});
+  analytics.track('garden_clear_undone', {items:undoSnap.length}); trayChanged();
   if(followup && !followup.sent) followup.undone=true;
   noteInteraction();
   undoSnap=null; hideUndo(); updateGardenUI();
@@ -2766,9 +2821,12 @@ function pieceH(k,x,y,sc,o){
   }
   return 0;
 }
-function pieceOpts(k){
-  const o={seed:Math.random()*100, phase:0, per:Math.max(13*bScale(),4.4*cs)};
-  if(k==='spire'){ o.jit=[]; o.ph=[]; for(let j=0;j<6;j++){ o.jit.push([Math.random()*2-1,Math.random()*2-1]); o.ph.push(Math.random()*6.283); } }
+// sd: a 16-bit seed for the piece's little irregularities, kept so a castle link can rebuild exactly the same piece
+function pieceOpts(k, sd){
+  if(sd==null) sd=Math.floor(Math.random()*65536);
+  const rnd=mulberry(Math.imul(sd+1,0x9E3779B1)>>>0);
+  const o={sd, seed:rnd()*100, phase:0, per:Math.max(13*bScale(),4.4*cs)};
+  if(k==='spire'){ o.jit=[]; o.ph=[]; for(let j=0;j<6;j++){ o.jit.push([rnd()*2-1,rnd()*2-1]); o.ph.push(rnd()*6.283); } }
   return o;
 }
 
@@ -2815,7 +2873,7 @@ function builderDown(e,p){
   if(!sel) return false;
   if(sel==='moat'){
     pushUndo();
-    const pt=newPointer(p[0],p[1],'moat'); pt.moat={cells:new Set(), start:[p[0],p[1]]};
+    const pt=newPointer(p[0],p[1],'moat'); pt.moat={cells:new Set(), start:[p[0],p[1]], path:[p.slice()]};
     pointers.set(e.pointerId,pt); try{ canvas.setPointerCapture(e.pointerId); }catch(err){}
     return true;
   }
@@ -3006,14 +3064,24 @@ function stampPiece(d, bd, pc, fx){
   return tipped ? 'tip' : brk>n*0.04 ? 'break' : sag>n*0.04 ? 'sag' : 'ok';
 }
 let fallTipShown=false;
-function buildPieces(list, kind){
+// opt.replay: rebuilding a shared castle. Quiet, and if the tray runs short of loose sand it is topped up
+// (the sender may have poured more in), so the castle always gets built.
+function buildPieces(list, kind, opt){
   if(!list.length) return;
+  opt=opt||{};
   const d=readTex(fA[0]), before=d.slice(), bd=readTex(fB[0]);
-  const fx=[], res={ok:0,sag:0,break:0,tip:0,short:0,empty:0};
-  for(const pc of list){ const r=stampPiece(d,bd,pc,fx); res[r]++; if(r==='short') break; }
+  const fx=[], res={ok:0,sag:0,break:0,tip:0,short:0,empty:0}, done=[];
+  for(const pc of list){
+    let r=stampPiece(d,bd,pc,fx);
+    for(let k=0;k<8 && r==='short' && opt.replay;k++){ topUpSand(d); r=stampPiece(d,bd,pc,fx); }
+    res[r]++; if(r==='short') break;
+    if(r!=='empty') done.push(pc);
+  }
   const built=res.ok+res.sag+res.break+res.tip;
   if(built){
     pushUndo(before);
+    if(mode==='castle') for(const pc of done) buildLog.push(logPiece(pc));
+    trayChanged();
     gl.bindTexture(gl.TEXTURE_2D,A[0]); gl.texSubImage2D(gl.TEXTURE_2D,0,0,0,NX,NY,gl.RGBA,gl.FLOAT,d);
     gl.bindTexture(gl.TEXTURE_2D,B[0]); gl.texSubImage2D(gl.TEXTURE_2D,0,0,0,NX,NY,gl.RGBA,gl.FLOAT,bd);
     castlesAny=true;
@@ -3023,8 +3091,9 @@ function buildPieces(list, kind){
     if(res.ok+res.sag) packSound();
     if(res.break+res.tip){ setTimeout(crumbleSound, 90); }
     try{ navigator.vibrate && navigator.vibrate(res.break+res.tip ? [10,60,30] : [14,90,14,90,26]); }catch(e){}
-    if((res.break||res.tip) && !fallTipShown){ fallTipShown=true; setTimeout(()=>toast('Too little support underneath, so part of it crumbled.'),500); }
+    if((res.break||res.tip) && !fallTipShown && !opt.replay){ fallTipShown=true; setTimeout(()=>toast('Too little support underneath, so part of it crumbled.'),500); }
   }
+  if(opt.replay) return;
   if(res.short){
     toast(built ? `Ran out of loose sand after ${built} piece${built>1?'s':''}. Pour in more sand, or shake to knock something down.`
                 : 'Not enough loose sand to build that. Pour in more sand, or shake to knock something down.');
@@ -3046,7 +3115,7 @@ function crumbleSound(){
 /* ---- undo: the tray as it was before the last piece, flag or moat ---- */
 const undoStack=[];
 function pushUndo(a){
-  undoStack.push({A:a||readTex(fA[0]), flags:flags.map(f=>Object.assign({},f)), wat:waterM.slice(), wd:waterAny?readTex(fWD[0]):null, src:waterSrc.map(w=>Object.assign({},w)), any:waterAny, N:[NX,NY]});
+  undoStack.push({L:buildLog.length, A:a||readTex(fA[0]), flags:flags.map(f=>Object.assign({},f)), wat:waterM.slice(), wd:waterAny?readTex(fWD[0]):null, src:waterSrc.map(w=>Object.assign({},w)), any:waterAny, N:[NX,NY]});
   if(undoStack.length>6) undoStack.shift();
   updateUndoBtn();
 }
@@ -3061,6 +3130,8 @@ function undoLast(){
   if(s.wd){ gl.bindTexture(gl.TEXTURE_2D,WD[0]); gl.texSubImage2D(gl.TEXTURE_2D,0,0,0,NX,NY,gl.RGBA,gl.FLOAT,s.wd); }
   for(const pt of pointers.values()) pt.tool==='moat' && (pt.moat.cells=new Set());
   np=0; castlesAny=true; updateUndoBtn();
+  if(s.L!=null && buildLog.length>s.L) buildLog.length=s.L;
+  trayChanged();
   analytics.track('castle_undo', {});
 }
 
@@ -3113,6 +3184,9 @@ function finishMoat(pt){
   }
   waterAny=true;
   setTimeout(()=>{ if(waterAny) waterSound(); }, 250);
+  if(mode==='castle' && pt.moat.path){ const P2=pt.moat.path.slice(), l=P2[P2.length-1]; if(Math.hypot(pt.x-l[0],pt.y-l[1])>0.3) P2.push([pt.x,pt.y]); buildLog.push({t:'m', pts:P2.map(q=>toShareU(q[0],q[1]))}); }
+  trayChanged();
+  if(pt.replay) return;
   analytics.track('castle_moat_dug', {cells:S.size});
   noteInteraction();
 }
@@ -3157,15 +3231,19 @@ const PROBE_N=32, probeT=tex(PROBE_N,1,gl.RGBA32F,gl.RGBA,gl.FLOAT,NEAREST,gl.CL
 const probePbo=gl.createBuffer(), probeData=new Float32Array(PROBE_N*4), probePts=new Float32Array(PROBE_N*2);
 gl.bindBuffer(gl.PIXEL_PACK_BUFFER,probePbo); gl.bufferData(gl.PIXEL_PACK_BUFFER,probeData.byteLength,gl.STREAM_COPY); gl.bindBuffer(gl.PIXEL_PACK_BUFFER,null);
 let probeFence=null, probeRefs=[];
-function plantFlag(x,y){
-  if(flags.filter(f=>f.st!=='fade').length>=24){ toast('That is a lot of flags. Knock a few down first.'); return; }
+function plantFlag(x,y,ci,quiet){
+  if(flags.filter(f=>f.st!=='fade').length>=24){ if(!quiet) toast('That is a lot of flags. Knock a few down first.'); return; }
   x=Math.min(NX-2,Math.max(1,x)); y=Math.min(NY-2,Math.max(1,y));
   const cx=Math.floor(x), cy=Math.floor(y), px=new Float32Array(9*4);
   gl.bindFramebuffer(gl.FRAMEBUFFER,fA[0]); gl.readPixels(cx-1,cy-1,3,3,gl.RGBA,gl.FLOAT,px);
   let h=0; for(let k=0;k<9;k++) h=Math.max(h,px[k*4]);
   pushUndo();
-  flags.push({id:++flagSeq, x, y, zb:h, gh:null, col:(mode==='battle'&&battle) ? PLAYERS[battle.turn].lin : FLAG_COLS[flagSeq%FLAG_COLS.length], st:'up', t:0, th:0, ph:Math.random()*6.283, fd:[1,0], alpha:1, rise:0});
+  const id=++flagSeq, c=ci!=null ? ci%FLAG_COLS.length : id%FLAG_COLS.length;
+  flags.push({id, x, y, zb:h, gh:null, ci:c, col:(mode==='battle'&&battle) ? PLAYERS[battle.turn].lin : FLAG_COLS[c], st:'up', t:0, th:0, ph:Math.random()*6.283, fd:[1,0], alpha:1, rise:0});
+  if(mode==='castle') buildLog.push({t:'f', u:toShareU(x,y), c});
+  trayChanged();
   flagSound(); try{ navigator.vibrate && navigator.vibrate(10); }catch(e){}
+  if(quiet) return;
   analytics.track('castle_flag_planted', {flags:flags.length});
   noteInteraction();
 }
@@ -3539,7 +3617,7 @@ let coverH={};
 function cover(o){
   bcTitle.textContent=o.title; bcText.textContent=o.text; bcGo.textContent=o.go;
   bcTitle.style.setProperty('--pc', o.color||'');
-  bcAlt.hidden=!o.alt; bcAlt.textContent=o.alt||'';
+  bcAlt.hidden=!o.alt; bcAlt.textContent=o.alt||''; bcShare.hidden=!o.share; bcShare.textContent=o.shareLabel||'Share';
   coverH=o; bCover.hidden=false;
   setTimeout(()=>bcGo.focus({preventScroll:true}),30);
 }
@@ -3810,7 +3888,7 @@ function finishBattle(w){
   setTimeout(()=>{ if(!battle||battle.phase!=='over') return;
     cover({ title:`${pname(w)} wins!`, color:PLAYERS[w].css,
       text:`${pname(l)}'s castle fell after ${battle.shots} shot${battle.shots===1?'':'s'}. ${pname(w)} landed ${P[w].hits} hit${P[w].hits===1?'':'s'}.`,
-      go:'Play again', onGo:()=>{ analytics.track('battle_play_again',{}); restartBattle(); }, alt:'Choose a mode', onAlt:()=>showModes(true) }); }, 1600);
+      go:'Play again', onGo:()=>{ analytics.track('battle_play_again',{}); restartBattle(); }, alt:'Choose a mode', onAlt:()=>showModes(true), share:true }); }, 1600);
 }
 function battleGridChanged(oN){
   if(!battle) return;
@@ -4014,8 +4092,10 @@ fbForm.addEventListener('submit',async e=>{
 function showModes(on){
   if(on){
     modesEl.hidden=false; modesEl.classList.remove('gone');
-    modesEl.querySelectorAll('.mcard').forEach(c=>{ const cur=c.dataset.mode===mode; c.querySelector('i').hidden=!cur; });
-    mNote.textContent = mode ? 'Switching modes starts you on a fresh tray.' : '';
+    saveTray();
+    modesEl.querySelectorAll('.mcard').forEach(c=>{ const cur=c.dataset.mode===mode, i=c.querySelector('i'), saved=!cur && hasSaved(c.dataset.mode);
+      i.textContent = cur ? 'Playing' : 'Saved'; i.hidden=!(cur||saved); });
+    mNote.textContent = mode ? 'Your garden and castle trays are saved on this device. Castle Battle starts fresh.' : '';
     mClose.hidden=!mode;
     if(ribbonOpen) openRibbon(false); if(menuOpen) openMenu(false); setCastleMode(false);
     if(mode){ const cur=modesEl.querySelector(`.mcard[data-mode="${mode}"]`); cur && cur.focus({preventScroll:true}); }
@@ -4027,12 +4107,15 @@ modesEl.querySelectorAll('.mcard').forEach(c=>c.addEventListener('click',()=>{
   firstInteraction(); if(isTouch) requestMotionPermission();
   const m=c.dataset.mode;
   if(m===mode){ showModes(false); return; }
+  stripCastleHash();
   applyMode(m,'start_screen');
 }));
 mClose.addEventListener('click',()=>showModes(false));
 btnHome.addEventListener('click',()=>{ noteInteraction(); showModes(true); });
 addEventListener('keydown',e=>{ if(e.key==='Escape' && mode && !modesEl.hidden && !modesEl.classList.contains('gone')) showModes(false); });
-function applyMode(m, via){
+// opt.fresh: don't restore the saved tray for this mode
+function applyMode(m, via, opt){
+  if(mode && mode!==m) saveTray();
   const prev=mode; mode=m;
   if(prev==='battle') stopBattle(m===prev ? 'restart' : 'left');
   document.body.classList.toggle('mode-castle',m==='castle'); document.body.classList.toggle('mode-zen',m==='zen'); document.body.classList.toggle('mode-battle',m==='battle');
@@ -4040,7 +4123,10 @@ function applyMode(m, via){
   if(menuOpen) openMenu(false); if(ribbonOpen) openRibbon(false); setCastleMode(false);
   // a fresh tray: new sand, no garden items, castles, flags or water
   items=[]; itemDrags.clear(); undoSnap=null; hideUndo(); updateGardenUI();
-  resetTray();
+  resetTray(); trayTouched=false; trayDirty=false;
+  trayKeyCur = (m==='zen'||m==='castle') ? trayKeyFor(m) : null;   // the saved tray this one belongs to
+  const restored = !(opt&&opt.fresh) && restoreTray(m);
+  btnShare.hidden=false;
   if(isBuilderMode()){
     btnCastle.title='Castle: open the castle pieces'; btnCastle.removeAttribute('aria-pressed'); btnCastle.setAttribute('aria-expanded','false'); btnCastle.setAttribute('aria-controls','ribbon');
     hint.textContent = isTouch ? 'Tap Castle to start building' : 'Click Castle to start building. Arrow keys tilt, Space shakes.';
@@ -4048,13 +4134,14 @@ function applyMode(m, via){
     btnCastle.title='Castle: tap here, then tap the sand to build one'; btnCastle.removeAttribute('aria-expanded'); btnCastle.removeAttribute('aria-controls'); btnCastle.setAttribute('aria-pressed','false');
     hint.textContent = isTouch ? 'Draw with your finger. Tilt or shake your phone.' : 'Drag to draw. Arrow keys or the tilt pad tilt the tray. Space shakes it.';
   }
-  hint.classList.remove('gone'); clearTimeout(applyMode.t); applyMode.t=setTimeout(()=>{ if(!castleMode) hint.classList.add('gone'); },5000);
-  analytics.track('mode_selected', {mode:m, from:prev||'start', via:via||'start_screen'});
+  hint.classList.remove('gone'); clearTimeout(applyMode.t); applyMode.t=setTimeout(()=>{ if(!castleMode && !replay) hint.classList.add('gone'); },5000);
+  if(restored){ hint.textContent = m==='castle' && castlesAny ? 'Your castle is just as you left it.' : m==='zen' && items.length ? 'Your garden is just as you left it.' : 'Your tray is just as you left it.'; }
+  analytics.track('mode_selected', {mode:m, from:prev||'start', via:via||'start_screen', restored:!!restored});
   showModes(false);
   if(m==='battle') startBattle(via);
 }
 // builder state that lives in the sand grid: clear it, or carry it over when the grid is resized
-function clearBuilder(){ flags=[]; undoStack.length=0; updateUndoBtn(); clearWater(); placing=null; ghostDirty=true; }
+function clearBuilder(){ flags=[]; buildLog=[]; undoStack.length=0; updateUndoBtn(); clearWater(); placing=null; ghostDirty=true; }
 function builderGridChanged(old, kept){
   undoStack.length=0; updateUndoBtn();
   const oldW=waterM, oN=[old.NX,old.NY];
@@ -4069,7 +4156,7 @@ function builderGridChanged(old, kept){
     }
     for(const f of flags){ f.x*=NX/oN[0]; f.y*=NY/oN[1]; f.zb*=old.cs/cs; f.gh=null; }
     battleGridChanged(oN);
-  } else { flags=[]; waterAny=false; waterSrc=[]; }
+  } else { flags=[]; buildLog=[]; waterAny=false; waterSrc=[]; }
   wdOld=null; uploadWater();
 }
 function resetTray(){
@@ -4077,6 +4164,7 @@ function resetTray(){
   gl.bindTexture(gl.TEXTURE_2D,A[0]); gl.texSubImage2D(gl.TEXTURE_2D,0,0,0,NX,NY,gl.RGBA,gl.FLOAT,data);
   gl.bindTexture(gl.TEXTURE_2D,B[0]); gl.texSubImage2D(gl.TEXTURE_2D,0,0,0,NX,NY,gl.RGBA,gl.FLOAT,new Float32Array(NX*NY*4));
   np=0; castlesAny=false; setCastleMode(false);
+  if(replay){ replay=null; pointers.delete('replay'); }
   clearBuilder();
 }
 
@@ -4090,7 +4178,7 @@ let started=false, wakeLock=null;
 function firstInteraction(){
   if(soundOn) initAudio();
   if(started) return; started=true;
-  setTimeout(()=>{ if(!castleMode) hint.classList.add('gone'); }, 2500);
+  setTimeout(()=>{ if(!castleMode && !replay) hint.classList.add('gone'); }, 2500);
   try{ navigator.wakeLock && navigator.wakeLock.request('screen').then(w=>wakeLock=w).catch(()=>{}); }catch(e){}
 }
 let toastTimer=0;
@@ -4109,7 +4197,9 @@ btnTilt.addEventListener('click',()=>{
 });
 btnSound.addEventListener('click',()=>{ soundOn=!soundOn; btnSound.classList.toggle('on',soundOn); $('#sndWave').style.opacity=soundOn?1:0.15; if(soundOn) initAudio(); analytics.track('sound_toggled', {on:soundOn}); });
 btnSound.classList.toggle('on',soundOn);
-$('#btnReset').addEventListener('click',()=>{ noteInteraction(); analytics.track('tray_reset', {}); resetTray(); });
+$('#btnReset').addEventListener('click',()=>{ noteInteraction(); analytics.track('tray_reset', {}); resetTray(); stripCastleHash();
+  // fresh sand; garden items stay (Clear removes those), so keep the save while there are any
+  if(mode==='zen' && liveItems().length){ trayChanged(); saveTray(); } else forgetTray(mode); });
 updateTiltBtn();
 if(isTouch && !(window.DeviceMotionEvent && typeof DeviceMotionEvent.requestPermission==='function')){ motion.asked=true; listenMotion(); }
 
@@ -4123,6 +4213,338 @@ document.addEventListener('visibilitychange',()=>{ if(document.visibilityState==
 /* ------------------------------------------------------------------ */
 /* Main loop                                                           */
 /* ------------------------------------------------------------------ */
+/* ------------------------------------------------------------------ */
+/* Sharing and saving                                                  */
+/* ------------------------------------------------------------------ */
+// The home of the app, for links and the picture's watermark (a local copy of the page links here too)
+const APP_URL='https://jaredmullaney-ui.github.io/Sand/';
+function appURL(){ return location.protocol==='https:' && location.hostname!=='localhost' ? location.origin+location.pathname : APP_URL; }
+const b64u={
+  enc(bytes){ let s=''; for(let i=0;i<bytes.length;i+=0x8000) s+=String.fromCharCode.apply(null, bytes.subarray(i,i+0x8000)); return btoa(s).replace(/\+/g,'-').replace(/\//g,'_').replace(/=+$/,''); },
+  dec(str){ const s=atob(str.replace(/-/g,'+').replace(/_/g,'/')); const b=new Uint8Array(s.length); for(let i=0;i<s.length;i++) b[i]=s.charCodeAt(i); return b; },
+};
+
+/* ---- the build log: every piece, flag and moat in Castle Builder, in "share units" (css px / bScale() from the
+   tray's centre), so it can be rebuilt on another tray of any size. Undo trims it; a fresh tray empties it. ---- */
+let buildLog=[];
+function toShareU(x,y){ const k=cs/bScale(); return [(x-NX/2)*k, (y-NY/2)*k]; }
+function logPiece(pc){ const b=bScale(); return {t:'p', k:pc.kind, u:toShareU(pc.x,pc.y), a:pc.ang, s:pc.sc/b, sd:pc.o.sd, ph:(pc.o.phase||0)/b}; }
+// a little more loose sand all over (not on castles), when a shared castle needs more than this tray has
+function topUpSand(d){ const add=cells.h0*0.12; for(let i=0;i<NX*NY;i++) if(!(d[i*4+3]>0)) d[i*4]+=add; }
+
+/* ---- castle links: #castle=<base64url bytes>. Version byte, then one record per step:
+   piece 0-5 (kind): x,y int16 (half units), angle u8, size u8 (/100), seed u16, [wall: phase int16 (half units)]
+   flag 6: x,y int16, colour u8
+   moat 7: n u16, first point int16 x,y, then n-1 int8 dx,dy (half units) ---- */
+const CASTLE_V=1, SHARE_KINDS=['tower','wall','level','spire','stairs','keep'];
+function encodeCastle(log){
+  const o=[], u8=v=>o.push(v&255), i16=v=>{ v=Math.max(-32768,Math.min(32767,Math.round(v))); o.push(v&255,(v>>8)&255); }, u16=v=>{ v=Math.max(0,Math.min(65535,Math.round(v))); o.push(v&255,v>>8); };
+  u8(CASTLE_V);
+  for(const e of log){
+    if(e.t==='p'){ u8(SHARE_KINDS.indexOf(e.k)); i16(e.u[0]*2); i16(e.u[1]*2); u8(((Math.round(e.a/(2*Math.PI)*256)%256)+256)%256); u8(Math.min(255,e.s*100)); u16(e.sd); if(e.k==='wall') i16(e.ph*2); }
+    else if(e.t==='f'){ u8(6); i16(e.u[0]*2); i16(e.u[1]*2); u8(e.c); }
+    else if(e.t==='m'){
+      // thin the path to points ~4 units apart, then split long jumps so each step fits in a byte
+      const pts=[e.pts[0]];
+      for(const q of e.pts.slice(1)){ const l=pts[pts.length-1], d=Math.hypot(q[0]-l[0],q[1]-l[1]); if(d<4) continue; const n=Math.ceil(d/60); for(let k=1;k<=n;k++) pts.push([l[0]+(q[0]-l[0])*k/n, l[1]+(q[1]-l[1])*k/n]); }
+      const last=e.pts[e.pts.length-1]; if(pts.length>1 || e.pts.length>1){ const l=pts[pts.length-1]; if(l!==last && Math.hypot(last[0]-l[0],last[1]-l[1])>0.5) pts.push(last); }
+      const n=Math.min(pts.length,65535); u8(7); u16(n);
+      let qx=Math.round(pts[0][0]*2), qy=Math.round(pts[0][1]*2); i16(qx); i16(qy);
+      for(let k=1;k<n;k++){ const dx=Math.max(-127,Math.min(127,Math.round(pts[k][0]*2-qx))), dy=Math.max(-127,Math.min(127,Math.round(pts[k][1]*2-qy))); u8(dx); u8(dy); qx+=dx; qy+=dy; }
+    }
+  }
+  return b64u.enc(new Uint8Array(o));
+}
+// {version, log} or {version} for a link from a newer version; throws on a damaged link
+function decodeCastle(str){
+  const b=b64u.dec(str); let i=0;
+  const need=n=>{ if(i+n>b.length) throw new Error('short'); };
+  const u8=()=>{ need(1); return b[i++]; }, i8=()=>{ const v=u8(); return v>=128?v-256:v; };
+  const u16=()=>{ need(2); const v=b[i]|(b[i+1]<<8); i+=2; return v; }, i16=()=>{ const v=u16(); return v>=32768?v-65536:v; };
+  const v=u8(); if(v!==CASTLE_V) return {version:v};
+  const log=[];
+  while(i<b.length){
+    const t=u8();
+    if(t<6){ const k=SHARE_KINDS[t], e={t:'p', k, u:[i16()/2,i16()/2], a:u8()/256*2*Math.PI, s:u8()/100, sd:u16(), ph:0}; if(k==='wall') e.ph=i16()/2; if(!(e.s>=0.2)) throw new Error('size'); log.push(e); }
+    else if(t===6) log.push({t:'f', u:[i16()/2,i16()/2], c:u8()%FLAG_COLS.length});
+    else if(t===7){ const n=u16(); if(!n) throw new Error('moat'); let x=i16(), y=i16(); const pts=[[x/2,y/2]]; for(let k=1;k<n;k++){ x+=i8(); y+=i8(); pts.push([x/2,y/2]); } log.push({t:'m', pts}); }
+    else throw new Error('record');
+    if(log.length>4000) throw new Error('long');
+  }
+  return {version:v, log};
+}
+function castleLink(){ return appURL()+'#castle='+encodeCastle(buildLog); }
+function stripCastleHash(){ if(/castle=/.test(location.hash)){ try{ history.replaceState(null,'',location.pathname+location.search); }catch(e){} } }
+
+/* ---- rebuilding a shared castle, a step at a time so you can watch it go up ---- */
+let replay=null;
+// scale (never up) and, if it fits much better, turn the castle a quarter turn to fit this tray
+function fitShared(log){
+  let ex=1, ey=1;
+  for(const e of log){
+    const r = e.t==='p' ? (e.k==='keep' ? keepRpx()/bScale() : Math.hypot(...pieceExt(e.k,e.s))) : e.t==='m' ? P.moatRPx : 4;
+    for(const q of (e.t==='m' ? e.pts : [e.u])){ ex=Math.max(ex,Math.abs(q[0])+r); ey=Math.max(ey,Math.abs(q[1])+r); }
+  }
+  const b=bScale(), aw=(natW/2-8)/b, ah=(natH/2-8)/b;
+  const f0=Math.min(1,aw/ex,ah/ey), f1=Math.min(1,aw/ey,ah/ex);
+  return f1>f0*1.15 ? {f:f1, rot:true} : {f:f0, rot:false};
+}
+function fromShareU(q){ let x=q[0], y=q[1]; if(replay.rot){ const t=x; x=-y; y=t; } const k=bScale()*replay.f/cs; return [NX/2+x*k, NY/2+y*k]; }
+function startReplay(log){
+  const fit=fitShared(log);
+  replay={log, i:0, wait:0.6, f:fit.f, rot:fit.rot, moat:null};
+  clearTimeout(applyMode.t); hint.textContent='Building a shared castle…'; hint.classList.remove('gone');
+  const n=t=>log.filter(e=>e.t===t).length;
+  analytics.track('castle_link_opened', {pieces:n('p'), flags:n('f'), moats:n('m'), fit:+fit.f.toFixed(2), rotated:fit.rot});
+}
+function stepReplay(dt){
+  const R=replay; if(!R || paused) return;
+  const M=R.moat;
+  if(M){
+    // a moat is dug by a pretend finger moving along the shared path
+    if(M.hold>0){ M.hold-=dt; if(M.hold>0) return; if(M.end){ pointers.delete('replay'); finishMoat(M.pt); R.moat=null; R.wait=0.6; return; } }
+    let left=480/cs*dt;
+    while(left>0 && M.k<M.pts.length){ const q=M.pts[M.k], dx=q[0]-M.pt.x, dy=q[1]-M.pt.y, l=Math.hypot(dx,dy); if(l<=left){ M.pt.x=q[0]; M.pt.y=q[1]; left-=l; M.k++; } else { M.pt.x+=dx/l*left; M.pt.y+=dy/l*left; left=0; } }
+    if(M.k>=M.pts.length){ M.end=true; M.hold=0.12; }
+    return;
+  }
+  R.wait-=dt; if(R.wait>0) return;
+  if(R.i>=R.log.length){
+    replay=null; trayChanged(); saveTray();
+    hint.textContent = 'This castle was shared with you.';
+    clearTimeout(applyMode.t); applyMode.t=setTimeout(()=>{ if(!castleMode && !replay) hint.classList.add('gone'); },6000);
+    return;
+  }
+  const e=R.log[R.i++], nx=R.log[R.i];
+  if(e.t==='p'){
+    const b=bScale()*R.f, q=fromShareU(e.u), o=pieceOpts(e.k,e.sd); o.phase=e.ph*b;
+    buildPieces([{kind:e.k, x:q[0], y:q[1], ang:e.a+(R.rot?Math.PI/2:0), sc:e.s*b, o}], e.k, {replay:true});
+    R.wait = (e.k==='wall' && nx && nx.t==='p' && nx.k==='wall') ? 0.05 : 0.2;   // a wall goes up in one sweep
+  } else if(e.t==='f'){ const q=fromShareU(e.u); plantFlag(q[0],q[1],e.c,true); R.wait=0.12; }
+  else if(e.t==='m'){
+    const pts=e.pts.map(fromShareU);
+    pushUndo();
+    const pt=newPointer(pts[0][0],pts[0][1],'moat'); pt.moat={cells:new Set(), start:pts[0].slice(), path:pts.map(q=>q.slice())}; pt.replay=true;
+    pointers.set('replay',pt); R.moat={pt, pts, k:1, hold:0.18, end:false};
+  }
+}
+function openCastleLink(str){
+  let r=null, why='damaged';
+  try{ r=decodeCastle(str); if(!r.log) why='newer'; }catch(e){ r=null; }
+  if(!r || !r.log || !r.log.length){
+    applyMode('castle','castle_link');
+    toast(why==='newer' ? 'That castle was shared from a newer Sandtray. Reload the page to get it, then open the link again.' : 'That castle link is incomplete, so it could not be built. Ask for the link again.');
+    analytics.track('castle_link_bad', {reason:why, chars:str.length});
+    stripCastleHash(); return;
+  }
+  // don't build over a castle saved on this device without asking
+  if(hasSaved('castle')){
+    applyMode('castle','castle_link');
+    cover({ title:'A castle was shared with you', text:'Building it replaces the castle saved on this tray. You can share yours first, so you have a link to it.', share:true, shareLabel:'Share my castle first',
+      go:'Build the shared castle', onGo:()=>{ analytics.track('castle_link_choice',{choice:'build'}); resetTray(); startReplay(r.log); },
+      alt:'Keep my castle', onAlt:()=>{ analytics.track('castle_link_choice',{choice:'keep'}); bCover.hidden=true; stripCastleHash(); } });
+    return;
+  }
+  applyMode('castle','castle_link',{fresh:true});
+  startReplay(r.log);
+}
+
+/* ---- saving: Zen Garden and Castle Builder each keep their tray in localStorage, so it is still there tomorrow.
+   Heights and packed sand are stored as 16-bit fractions of the resting depth (resampled if the screen changed);
+   moat water, flags, the build log (so a castle link still works) and garden items go with them.
+   Castle Battle always starts fresh. ---- */
+const SAVE_V=1;
+let trayTouched=false, trayDirty=false, trayKeyCur=null;
+function trayKeyFor(m){ return (window.dailyChallenge && window.dailyChallenge.active) ? 'sandtray.tray.daily' : 'sandtray.tray.'+m; }
+function trayChanged(){ if(mode==='zen'||mode==='castle'){ trayTouched=true; trayDirty=true; } }
+function hasSaved(m){ try{ return !!localStorage.getItem('sandtray.tray.'+m); }catch(e){ return false; } }
+function forgetTray(m){ if(m!=='zen' && m!=='castle') return; try{ localStorage.removeItem(trayKeyCur||trayKeyFor(m)); }catch(e){} trayTouched=false; trayDirty=false; }
+const q16=(a,k)=>{ const o=new Uint16Array(a.length); for(let i=0;i<a.length;i++) o[i]=Math.min(65535,Math.max(0,Math.round(a[i]*k))); return b64u.enc(new Uint8Array(o.buffer)); };
+const dq16=s=>new Uint16Array(b64u.dec(s).buffer);
+const q8=a=>{ const o=new Uint8Array(a.length); for(let i=0;i<a.length;i++) o[i]=Math.min(255,Math.max(0,Math.round(a[i]*255))); return b64u.enc(o); };
+function saveTray(){
+  if(!(mode==='zen'||mode==='castle') || !trayTouched || replay || !trayKeyCur) return;
+  try{
+    const d=readTex(fA[0]), n=NX*NY, k=8192/cells.h0, H=new Float32Array(n), W=new Float32Array(n);
+    let anyW=false;
+    for(let i=0;i<n;i++){ H[i]=d[i*4]; W[i]=Math.max(0,d[i*4+3]); if(W[i]>0) anyW=true; }
+    const s={v:SAVE_V, mode, t:Date.now(), N:[NX,NY], h:q16(H,k)};
+    if(anyW) s.w=q16(W,k);
+    if(waterAny){
+      const wd=readTex(fWD[0]), D=new Float32Array(n), Y=new Float32Array(n), M=new Float32Array(n);
+      for(let i=0;i<n;i++){ D[i]=wd[i*4]; Y[i]=wd[i*4+1]; M[i]=waterM[i*4]; }
+      s.wd=q16(D,k); s.wy=q8(Y); s.wm=q8(M);
+    }
+    if(mode==='castle'){
+      s.flags=flags.filter(f=>f.st==='up').map(f=>[+(f.x/NX).toFixed(5), +(f.y/NY).toFixed(5), f.ci||0]);
+      if(buildLog.length) s.log=encodeCastle(buildLog);
+    } else {
+      s.items=liveItems().filter(it=>it.st==='rest'||it.st==='slide').map(it=>[it.kind, +(it.x/natW).toFixed(5), +(it.y/natH).toFixed(5), +it.rot.toFixed(3)]);
+    }
+    localStorage.setItem(trayKeyCur, JSON.stringify(s));
+    trayDirty=false;
+  }catch(e){
+    if(!saveTray.failed){ saveTray.failed=true; analytics.track('tray_save_failed', {mode, error:String(e&&e.name||e).slice(0,40)}); }
+  }
+}
+function restoreTray(m){
+  if(!trayKeyCur) return false;
+  let s=null;
+  try{ s=JSON.parse(localStorage.getItem(trayKeyCur)||'null'); }catch(e){}
+  if(!s || s.v!==SAVE_V || !s.N || !s.h) return false;
+  try{
+    const [ox,oy]=s.N, n=NX*NY, k=cells.h0/8192;
+    const Hq=dq16(s.h), Wq=s.w?dq16(s.w):null;
+    if(Hq.length!==ox*oy || (Wq && Wq.length!==ox*oy)) throw new Error('size');
+    // nearest-cell resample onto this grid (the same as the app does when the screen is resized)
+    const src=new Int32Array(n);
+    for(let y=0;y<NY;y++) for(let x=0;x<NX;x++) src[y*NX+x]=Math.min(oy-1,Math.floor((y+0.5)*oy/NY))*ox+Math.min(ox-1,Math.floor((x+0.5)*ox/NX));
+    const d=new Float32Array(n*4); let anyW=false;
+    for(let i=0;i<n;i++){ const j=src[i]; d[i*4]=Hq[j]*k; if(Wq){ d[i*4+3]=Math.min(Wq[j],Hq[j])*k; if(Wq[j]) anyW=true; } }
+    gl.bindTexture(gl.TEXTURE_2D,A[0]); gl.texSubImage2D(gl.TEXTURE_2D,0,0,0,NX,NY,gl.RGBA,gl.FLOAT,d);
+    if(s.wd){
+      const D=dq16(s.wd), Y=b64u.dec(s.wy), Mq=b64u.dec(s.wm), wd=new Float32Array(n*4); let any=false;
+      if(D.length!==ox*oy || Y.length!==ox*oy || Mq.length!==ox*oy) throw new Error('water');
+      for(let i=0;i<n;i++){ const j=src[i]; wd[i*4]=D[j]*k; wd[i*4+1]=Y[j]/255; wd[i*4+2]=d[i*4]+wd[i*4]; waterM[i*4]=Mq[j]/255; waterM[i*4+1]=Mq[j]>0 ? -1e3 : 1e9; if(D[j]||Y[j]||Mq[j]) any=true; }
+      gl.bindTexture(gl.TEXTURE_2D,WD[0]); gl.texSubImage2D(gl.TEXTURE_2D,0,0,0,NX,NY,gl.RGBA,gl.FLOAT,wd);
+      waterAny=any; uploadWater();
+    }
+    if(m==='castle'){
+      flags=(s.flags||[]).map(([fx,fy,c])=>{ const x=Math.min(NX-2,Math.max(1,fx*NX)), y=Math.min(NY-2,Math.max(1,fy*NY)); let h=0;
+        for(let yy=-1;yy<=1;yy++) for(let xx=-1;xx<=1;xx++){ const i=((Math.floor(y)+yy)*NX+Math.floor(x)+xx)*4; h=Math.max(h,d[i]||0); }
+        return {id:++flagSeq, x, y, zb:h, gh:null, ci:c, col:FLAG_COLS[c%FLAG_COLS.length], st:'up', t:0, th:0, ph:Math.random()*6.283, fd:[1,0], alpha:1, rise:1}; });
+      buildLog=[]; if(s.log){ try{ buildLog=decodeCastle(s.log).log||[]; }catch(e){} }
+    } else if(s.items){
+      items=s.items.filter(a=>KINDS[a[0]]).map(([kind,fx,fy,rot])=>{ const it=newItem(kind,fx*natW,fy*natH); it.rot=rot; clampItem(it); return it; });
+      updateGardenUI();
+    }
+    castlesAny=anyW; trayTouched=true; trayDirty=false;
+    try{ dispatchEvent(new CustomEvent('sandtray:trayrestored',{detail:{mode:m}})); }catch(e){}
+    return true;
+  }catch(e){
+    analytics.track('tray_restore_failed', {mode:m, error:String(e&&e.message||e).slice(0,40)});
+    resetTray(); return false;
+  }
+}
+// save a little while after things change, and whenever the app goes to the background
+setInterval(()=>{ if(trayDirty && !document.hidden && !pointers.size) saveTray(); }, 10000);
+document.addEventListener('visibilitychange',()=>{ if(document.visibilityState==='hidden') saveTray(); });
+addEventListener('pagehide', saveTray);
+
+/* ---- the picture: the next frame is drawn again at up to 2x and copied out right away, in the same task,
+   so this works without preserveDrawingBuffer (which costs performance on phones) ---- */
+let snapReq=null;
+function snapshot(){
+  return new Promise((res,rej)=>{ snapReq={res,rej}; setTimeout(()=>{ if(snapReq){ snapReq=null; rej(new Error('timeout')); } }, 4000); });
+}
+function takeSnap(L){
+  const r=snapReq; snapReq=null;
+  try{
+    const px=Math.max(canvas._px, Math.min(2, Math.max(DPR,1), Math.sqrt(6e6/(vw*vh))));
+    const W=Math.round(vw*px), H=Math.round(vh*px), big=W>canvas.width;
+    if(big){ canvas.width=W; canvas.height=H; canvas._px=W/vw; renderFinal(L); }
+    const out=document.createElement('canvas'); out.width=canvas.width; out.height=canvas.height;
+    const c=out.getContext('2d'); c.drawImage(canvas,0,0);
+    if(big){ resizeCanvas(); renderFinal(L); }                 // and the frame on screen as usual
+    if(battle && bfxHad) c.drawImage(bfx,0,0,out.width,out.height);
+    stampMark(c, out.width/vw);
+    r.res(out);
+  }catch(e){ r.rej(e); }
+}
+// a small "Sandtray" mark with the address, bottom right
+function stampMark(c,k){
+  const host=appURL().replace(/^https?:\/\//,'').replace(/\/$/,''), font=getComputedStyle(document.body).fontFamily;
+  c.save(); c.scale(k,k);
+  const b=`700 13px ${font}`, t=`500 11.5px ${font}`;
+  c.font=b; const w1=c.measureText('Sandtray').width; c.font=t; const w2=c.measureText(host).width;
+  const h=28, w=w1+w2+32, x=vw-w-12, y=vh-h-12;
+  c.fillStyle='rgba(28,22,17,0.55)'; c.beginPath(); if(c.roundRect) c.roundRect(x,y,w,h,h/2); else c.rect(x,y,w,h); c.fill();
+  c.textBaseline='middle'; c.fillStyle='#f7efe3'; c.font=b; c.fillText('Sandtray', x+12, y+h/2+0.5);
+  c.fillStyle='rgba(247,239,227,0.7)'; c.font=t; c.fillText(host, x+20+w1, y+h/2+0.5);
+  c.restore();
+}
+
+/* ---- the share card ---- */
+const btnShare=$('#btnShare'), shareEl=$('#share'), shImg=$('#shImg'), shTitle=$('#shTitle'), shText=$('#shText');
+const shPic=$('#shPic'), shSave=$('#shSave'), shLink=$('#shLink'), shStatus=$('#shStatus'), mShare=$('#mShare'), bcShare=$('#bcShare');
+let shareCur=null, shareBusy=false;
+const linkSheet=()=>isTouch && !!navigator.share;              // phones: the share sheet; computers: copy the link
+function dailyText(){ try{ const t=window.dailyChallenge && window.dailyChallenge.shareText && window.dailyChallenge.shareText(); return t ? ' '+t+'.' : ''; }catch(e){ return ''; } }
+function shareInfo(){
+  const castle = mode==='castle' && buildLog.length>0;
+  const kind = castle ? 'castle' : mode==='zen' ? 'garden' : mode==='battle' ? 'battle' : 'tray';
+  const link = castle ? castleLink() : appURL();
+  const say = { castle:'I built this sand castle in Sandtray. Open the link to watch it go up on your own tray:',
+    garden:'I made this zen garden in Sandtray, a sand tray for your phone:', battle:'We had a castle battle in Sandtray:', tray:'Made in Sandtray, a sand tray for your phone:' }[kind];
+  return { kind, castle, link, title: castle ? 'My sand castle' : 'Sandtray', say: say.replace(/:$/,'.')+dailyText(), text: say+dailyText()+' '+link };
+}
+async function openShare(via){
+  if(shareBusy) return;
+  shareBusy=true; btnShare.classList.add('busy'); noteInteraction();
+  let cv=null;
+  try{ cv=await snapshot(); }catch(e){}
+  const blob = cv ? await new Promise(r=>{ try{ cv.toBlob(r,'image/png'); }catch(e){ r(null); } }) : null;
+  shareBusy=false; btnShare.classList.remove('busy');
+  const info=shareInfo();
+  if(shareCur && shareCur.url) URL.revokeObjectURL(shareCur.url);
+  const d=new Date(), stamp=`${d.getFullYear()}${String(d.getMonth()+1).padStart(2,'0')}${String(d.getDate()).padStart(2,'0')}-${String(d.getHours()).padStart(2,'0')}${String(d.getMinutes()).padStart(2,'0')}`;
+  const name=`sandtray-${info.kind}-${stamp}.png`;
+  const file = blob && typeof File==='function' ? new File([blob], name, {type:'image/png'}) : null;
+  let canFiles=false; try{ canFiles=!!(file && navigator.share && navigator.canShare && navigator.canShare({files:[file]})); }catch(e){}
+  shareCur={info, blob, file, name, url: blob ? URL.createObjectURL(blob) : null, via};
+  shImg.hidden=!shareCur.url; if(shareCur.url) shImg.src=shareCur.url;
+  shTitle.textContent = {castle:'Share your castle', garden:'Share your garden', battle:'Share the battle', tray:'Share your tray'}[info.kind];
+  shText.textContent = !blob ? 'The picture didn\'t work on this device, but you can still send a link.'
+    : info.castle ? 'Send a picture, or a link that builds this castle on a fresh tray for whoever opens it.'
+    : 'Send a picture of your tray, or a link to Sandtray.';
+  shPic.hidden=!canFiles; shSave.hidden=!blob;
+  shSave.classList.toggle('pri', !!blob && !canFiles);
+  shLink.querySelector('span').textContent = (linkSheet() ? 'Share ' : 'Copy ') + (info.castle ? 'castle link' : 'link to Sandtray');
+  shLink.classList.toggle('pri', !blob);
+  shStatus.textContent='';
+  shareEl.hidden=false;
+  setTimeout(()=>{ const f=[shPic,shSave,shLink].find(b=>!b.hidden); f && f.focus({preventScroll:true}); },30);
+  analytics.track('share_opened', {mode:mode||null, kind:info.kind, via:via||'button', picture:!!blob, file_share:canFiles, steps:info.castle?buildLog.length:0, link_chars:info.castle?info.link.length:0});
+}
+function closeShare(){ shareEl.hidden=true; if(shareCur && shareCur.url){ const u=shareCur.url; setTimeout(()=>URL.revokeObjectURL(u),1000); shareCur.url=null; } }
+function shared(method){ const i=shareCur&&shareCur.info; analytics.track('share_sent', {method, mode:mode||null, kind:i?i.kind:'app', via:(shareCur&&shareCur.via)||'button'}); }
+async function copyText(t){
+  try{ await navigator.clipboard.writeText(t); return true; }catch(e){}
+  try{ const ta=document.createElement('textarea'); ta.value=t; ta.setAttribute('readonly',''); ta.style.cssText='position:fixed;left:-9999px;top:0;opacity:0'; document.body.appendChild(ta); ta.select(); const ok=document.execCommand('copy'); ta.remove(); return ok; }catch(e){ return false; }
+}
+function shareFailed(e){ return !(e && e.name==='AbortError'); }   // AbortError: the person closed the share sheet
+shPic.addEventListener('click',async()=>{
+  const c=shareCur; if(!c || !c.file) return;
+  try{ await navigator.share({files:[c.file], title:c.info.title, text:c.info.text}); shared('picture'); shStatus.textContent='Shared.'; }
+  catch(e){ if(shareFailed(e)) shStatus.textContent='Sharing didn\'t work here. Try Save picture.'; }
+});
+shSave.addEventListener('click',()=>{
+  const c=shareCur; if(!c || !c.url) return;
+  const a=document.createElement('a'); a.href=c.url; a.download=c.name; document.body.appendChild(a); a.click(); a.remove();
+  shared('save'); shStatus.textContent='Saved. Look in your downloads.';
+});
+shLink.addEventListener('click',async()=>{
+  const c=shareCur; if(!c) return;
+  if(linkSheet()){
+    try{ await navigator.share({title:c.info.title, text:c.info.say, url:c.info.link}); shared('link_sheet'); shStatus.textContent='Shared.'; return; }
+    catch(e){ if(!shareFailed(e)) return; }
+  }
+  if(await copyText(c.info.link)){ shared('link_copy'); shStatus.textContent = c.info.castle ? 'Castle link copied. Paste it anywhere to share it.' : 'Link copied.'; }
+  else shStatus.textContent=c.info.link;
+});
+$('#shX').addEventListener('click',closeShare);
+shareEl.addEventListener('click',e=>{ if(e.target===shareEl) closeShare(); });
+addEventListener('keydown',e=>{ if(shareEl.hidden) return; if(e.key==='Escape') closeShare(); e.stopImmediatePropagation(); }, true);
+btnShare.addEventListener('click',()=>openShare('button'));
+bcShare.addEventListener('click',()=>openShare(mode==='battle' ? 'battle_over' : 'castle_link_prompt'));
+window.sandShare = via => openShare(via||'external');
+// the start screen: share the app itself
+mShare.addEventListener('click',async()=>{
+  const url=appURL(), text='Sandtray: a real-time sand tray for your phone. Draw and rake the sand, tilt it, build sand castles.';
+  if(navigator.share){ try{ await navigator.share({title:'Sandtray', text, url}); analytics.track('share_sent',{method:'app_sheet', mode:mode||null, kind:'app', via:'start_screen'}); return; }catch(e){ if(!shareFailed(e)) return; } }
+  if(await copyText(url)){ analytics.track('share_sent',{method:'app_copy', mode:mode||null, kind:'app', via:'start_screen'}); mNote.textContent='Link to Sandtray copied.'; }
+});
+
 function readTex(f){ const d=new Float32Array(NX*NY*4); gl.bindFramebuffer(gl.FRAMEBUFFER,f); gl.readPixels(0,0,NX,NY,gl.RGBA,gl.FLOAT,d); return d; }
 window.__sand = {
   readH(){ return Array.from(readTex(fA[0])); }, readHF(){ return readTex(fA[0]); }, readB(){ return readTex(fB[0]); },
@@ -4143,7 +4565,7 @@ window.__sand = {
     mode:m=>applyMode(m,'api'), get modeName(){ return mode; }, open(on){ openRibbon(on!==false); }, select(k){ selectPiece(k); },
     place(kind,x,y,o){ o=o||{}; const g={kind, start:[x,y], cur:[o.x2??x,o.y2??y], path:o.path||[[x,y]].concat(o.x2!=null?[[o.x2,o.y2]]:[]), size:o.size||1}; if(o.ang!=null) selAng[kind]=o.ang; commitGesture(g); },
     gesture:g=>gesturePieces(g), flag(x,y){ plantFlag(x,y); }, get flags(){ return flags; }, undo(){ undoLast(); }, get undoN(){ return undoStack.length; },
-    moat(path){ pushUndo(); const pt=newPointer(path[0][0],path[0][1],'moat'); pt.moat={cells:new Set(), start:path[0].slice()}; pointers.set('moat',pt); for(let i=0;i<10;i++) simFrame(1/60);
+    moat(path){ pushUndo(); const pt=newPointer(path[0][0],path[0][1],'moat'); pt.moat={cells:new Set(), start:path[0].slice(), path:path.map(q=>q.slice())}; pointers.set('moat',pt); for(let i=0;i<10;i++) simFrame(1/60);
       for(let i=1;i<path.length;i++){ pt.x=path[i][0]; pt.y=path[i][1]; simFrame(1/60); } for(let i=0;i<8;i++) simFrame(1/60); pointers.delete('moat'); finishMoat(pt); },
     get water(){ return {any:waterAny, slope:wS.slice(), wl:cells.wl}; }, readW(){ return waterM; }, readWD(){ return readTex(fWD[0]); }, readB(){ return readTex(fB[0]); },
     showModes(on){ showModes(on!==false); },
@@ -4154,6 +4576,10 @@ window.__sand = {
     catapult(x,y){ placeCatapult([x,y]); }, impact(x,y,z,ammo){ return battleImpact(x,y,z,ammo||'ball',[0,-1]); },
     fire(dx,dy,power){ const l=Math.hypot(dx,dy)||1; battleAct({t:'fire', p:battle.turn, ammo:battle.ammo, dir:[dx/l,dy/l], power}); },
     aim(x,y,x2,y2){ battle.aim={id:'t', s:[x,y], c:[x2,y2]}; }, release(){ battleUp({pointerId:'t', type:'pointerup'}); },
+  },
+  share:{
+    get log(){ return buildLog; }, encode:l=>encodeCastle(l||buildLog), decode:t=>decodeCastle(t), link:()=>castleLink(), open:v=>openShare(v||'api'), close:()=>closeShare(),
+    snapshot:()=>snapshot(), save:()=>saveTray(), restore:m=>restoreTray(m), get replaying(){ return !!replay; }, get key(){ return trayKeyCur; }, get touched(){ return trayTouched; },
   },
   garden:{
     add(kind,x,y,how){ return addItem(kind,x,y,how||'api'); }, get items(){ return items; }, KINDS,
@@ -4166,8 +4592,8 @@ setup(false);
 renderThumbs();
 clearWater();
 renderPieceThumbs();
-{ const hm=(location.hash.match(/mode=(zen|castle|battle)/)||[])[1];
-  if(hm) applyMode(hm,'link'); else showModes(true); }
+{ const hm=(location.hash.match(/mode=(zen|castle|battle)/)||[])[1], hc=(location.hash.match(/castle=([A-Za-z0-9_-]+)/)||[])[1];
+  if(hc) openCastleLink(hc); else if(hm) applyMode(hm,'link'); else showModes(true); }
 setTimeout(renderModeCards, 30);
 let last=performance.now(), simTime=0, frameN=0, flowLevel=0, massInfo=[0,0];
 let ema=16.7, lastQualityChange=performance.now();
@@ -4175,30 +4601,14 @@ let Rf=[0,0,9.81], Rlow=[0,0,9.81], shake=0;
 let gx=0, gy=0, gz=1, paused=false, Rover=null, Rmid=[0,0,9.81];
 const dbg = DEBUG ? (()=>{ const d=document.createElement('div'); d.id='dbg'; document.body.appendChild(d); return d; })() : null;
 
-function frame(now){
-  requestAnimationFrame(frame);
-  let dt=(now-last)/1000; last=now;
-  if(!(dt>0)) dt=1/60;
-  ema=ema*0.95+Math.min(dt*1000,100)*0.05;
-  dt=Math.min(dt,1/30);
-  frameN++;
-  if(!paused) simFrame(dt);
-  const G=cells.G;
-  // light: fixed in the room, so it moves across the tray as the device tilts
-  const ul=Math.hypot(Rlow[0],Rlow[1],Rlow[2])||1;
-  const up=[Rlow[0]/ul, -Rlow[1]/ul, Rlow[2]/ul]; // sim frame (x right, y down, z up)
-  let d0=[LOOK.azim[0],LOOK.azim[1],0]; const dd=d0[0]*up[0]+d0[1]*up[1];
-  let dh=[d0[0]-up[0]*dd, d0[1]-up[1]*dd, -up[2]*dd]; const dl=Math.hypot(dh[0],dh[1],dh[2])||1; dh=dh.map(v=>v/dl);
-  const E=LOOK.elev*Math.PI/180;
-  let L=[up[0]*Math.sin(E)+dh[0]*Math.cos(E), up[1]*Math.sin(E)+dh[1]*Math.cos(E), up[2]*Math.sin(E)+dh[2]*Math.cos(E)];
-  if(L[2]<0.12){ L[2]=0.12; }
-
-  // ---- render prep ----
+/* Rendering: the lit surface (once per frame), then the final image, items, flags and grains into the canvas */
+function renderPrep(L){
   run(progs.surf, fSurfA, u=>{ gl.uniform2i(u.uN,NX,NY); bindTex(progs.surf,'uA',0,A[0]); bindTex(progs.surf,'uB',1,B[0]); gl.uniform1f(u.uTime,simTime); gl.uniform1f(u.uH0,cells.h0); });
   const objOn=buildObj();
   run(progs.light, fSurfB, u=>{ gl.uniform2i(u.uN,NX,NY); bindTex(progs.light,'uS',0,SurfA); gl.uniform3f(u.uL,L[0],L[1],L[2]); gl.uniform1f(u.uWall,0.0);
     bindTex(progs.light,'uObj',1,ObjT); gl.uniform1i(u.uHasObj,objOn?1:0); });
-
+}
+function renderFinal(L){
   // ---- final ----
   const px=canvas._px;
   run(progs.final, null, u=>{
@@ -4217,9 +4627,6 @@ function frame(now){
   // ---- garden items, flags ----
   drawItems(L,px);
   drawFlags(L);
-  drawGhost();
-  drawBattle(L);
-  probeFlags();
 
   // ---- particles ----
   if(np>0){
@@ -4233,6 +4640,32 @@ function frame(now){
     gl.uniform1f(u.uShadow,0); gl.drawArrays(gl.POINTS,0,np);
     gl.disable(gl.BLEND); gl.bindVertexArray(null);
   }
+}
+function frame(now){
+  requestAnimationFrame(frame);
+  let dt=(now-last)/1000; last=now;
+  if(!(dt>0)) dt=1/60;
+  ema=ema*0.95+Math.min(dt*1000,100)*0.05;
+  dt=Math.min(dt,1/30);
+  frameN++;
+  if(!paused) simFrame(dt);
+  const G=cells.G;
+  // light: fixed in the room, so it moves across the tray as the device tilts
+  const ul=Math.hypot(Rlow[0],Rlow[1],Rlow[2])||1;
+  const up=[Rlow[0]/ul, -Rlow[1]/ul, Rlow[2]/ul]; // sim frame (x right, y down, z up)
+  let d0=[LOOK.azim[0],LOOK.azim[1],0]; const dd=d0[0]*up[0]+d0[1]*up[1];
+  let dh=[d0[0]-up[0]*dd, d0[1]-up[1]*dd, -up[2]*dd]; const dl=Math.hypot(dh[0],dh[1],dh[2])||1; dh=dh.map(v=>v/dl);
+  const E=LOOK.elev*Math.PI/180;
+  let L=[up[0]*Math.sin(E)+dh[0]*Math.cos(E), up[1]*Math.sin(E)+dh[1]*Math.cos(E), up[2]*Math.sin(E)+dh[2]*Math.cos(E)];
+  if(L[2]<0.12){ L[2]=0.12; }
+
+  stepReplay(dt);
+  renderPrep(L);
+  renderFinal(L);
+  drawGhost();
+  drawBattle(L);
+  if(snapReq) takeSnap(L);
+  probeFlags();
 
   // ---- async readback of flow for sound / haptics ----
   // (only needed for sound / haptics / debug; skipping it otherwise keeps the GPU pipeline free)
