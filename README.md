@@ -6,7 +6,7 @@ A real-time sand tray for phones and tablets, in the browser. Draw in it with yo
 
 ## Two ways to play
 
-Every visit opens on a start screen with two modes. Each one starts on a fresh tray. The button in the top-left corner brings the start screen back (switching modes starts a fresh tray; **Back to my tray** keeps yours).
+Every visit opens on a start screen with the modes. Zen Garden and Castle Builder each keep their own tray, saved on the device, so a garden or castle is still there the next day; a card with a saved tray is marked **Saved**. Castle Battle always starts fresh. The button in the top-left corner brings the start screen back (**Back to my tray** returns to the one you were on). **Reset** gives the current mode fresh sand and forgets its saved tray (garden items stay until you **Clear** them).
 
 - **Zen Garden:** the sand tools and the Garden items below. No castles: those live in Castle Builder.
 - **Castle Builder:** the sand tools, plus a ribbon of castle pieces you build with piece by piece. No garden items. The tray starts with deeper sand to build with.
@@ -55,6 +55,22 @@ The start screen shows **today's challenge**, one Castle Builder goal a day, the
 
 Scores are measured from the sand itself, on a sandbox scale (1 css px = 0.25 cm, so the castle tray's sand is about 5.5 cm deep). A score counts once it has stood for 1.5 seconds, so a tower that topples doesn't count. Goals for length and volume scale with the tray, so a tablet isn't harder than a phone. The pill at the top shows your best against the goal; tap it for details, **Share** and **Change mode**. Your best for each day and your streak are kept on the device (`sandtray.daily` in localStorage), and the challenge tray is saved apart from your free-build castle.
 
+## Sharing
+
+The round button in the top-right corner takes a picture of the tray and opens a share card:
+
+- **Share picture** sends the picture through the phone's share sheet (Web Share API), with a line of text and a link.
+- **Save picture** downloads it as a PNG. On computers, and anywhere the share sheet can't take files, this is the main button.
+- **Share castle link** (in Castle Builder, **Copy castle link** on a computer) sends a link that rebuilds your castle for whoever opens it. In Zen Garden and Castle Battle the link goes to Sandtray itself.
+
+The picture is the tray as it is right now, drawn again at up to twice the screen resolution, with a small Sandtray mark and address in the corner. It is captured straight after a frame is drawn, so the app doesn't need `preserveDrawingBuffer`.
+
+**Castle links** (`#castle=…`) hold every piece, flag and moat you built, in order, not a picture of the sand. Opening one starts Castle Builder on a fresh tray and builds the castle piece by piece, with the moat dug and filled, so the other person sees it go up and can then play with it. Positions are relative to the middle of the tray and scale with the screen, and a castle built on a phone is shrunk and turned a quarter turn if that fits a wide screen better. If the tray runs short of loose sand, a little more is added so the whole castle gets built. The link is the castle as built: digging, raking, shaking and tilting aren't in it. A typical castle link is a few hundred characters.
+
+If you already have a castle saved, the app asks before building a shared one over it, and offers to share yours first. Castle Battle's end screen has a Share button too, and the start screen has **Share Sandtray**, which shares the app's address.
+
+The page has a description, Open Graph tags and a 1200×630 preview image (`share/og-image.jpg`), so links unfurl with a picture in messaging apps, plus a favicon and home-screen icon made from the Sandtray logo (`icons/`).
+
 ## What you can do
 
 | Tool | What it does |
@@ -100,7 +116,7 @@ The Clear button runs an A/B test. Each device is assigned once, at random, to o
 
 Add `#clear=undo` or `#clear=confirm` to the URL to force a variant while testing.
 
-Events go to [PostHog](https://posthog.com) (free tier). Analytics are off until a project key is set: paste it into `ANALYTICS.key` near the top of the script in `index.html` (and switch `host` to `https://eu.i.posthog.com` for an EU project). No cookies are used: PostHog runs with in-memory persistence, and the app keeps only an anonymous random id and the variant in localStorage. Browsers sending Do Not Track or Global Privacy Control are not tracked.
+Events go to [PostHog](https://posthog.com) (free tier). Analytics are off until a project key is set: paste it into `ANALYTICS.key` near the top of the script in `index.html` (and switch `host` to `https://eu.i.posthog.com` for an EU project). No cookies are used: PostHog runs with in-memory persistence, and the app keeps only an anonymous random id and the variant in localStorage (plus the saved trays, which never leave the device). Browsers sending Do Not Track or Global Privacy Control are not tracked.
 
 | Event | When |
 | --- | --- |
@@ -108,8 +124,11 @@ Events go to [PostHog](https://posthog.com) (free tier). Analytics are off until
 | `garden_item_placed`, `garden_item_moved`, `garden_item_lost` | Item added (by drag or tap), moved, or slid off the tray (tilt or shake) |
 | `garden_clear_tapped`, `garden_clear_cancelled`, `garden_clear_done`, `garden_clear_undone` | The Clear flow |
 | `garden_clear_followup` | One minute after a clear, or as soon as the user leaves the app: `kept_playing`, `interactions_60s`, `first_interaction_s`, `left_app`, `left_after_s`, `items_placed_after`, `undone` |
-| `mode_selected` | A mode was picked on the start screen (`mode`, `from`) |
+| `mode_selected` | A mode was picked on the start screen (`mode`, `from`, `via`, and `restored` when a saved tray came back) |
 | `daily_started`, `daily_completed`, `daily_ended`, `daily_shared`, `daily_panel_opened`, `daily_quake_test` | The daily challenge: `challenge`, `day` (challenge number), `best`, `goal`, `done`, `streak`; `daily_ended` has `reason` (`left`, `app_hidden`) |
 | `castle_ribbon_opened`, `castle_piece_placed`, `castle_flag_planted`, `castle_moat_dug`, `castle_undo` | Castle Builder use. `castle_piece_placed` says which piece and how many pieces stood, sagged, broke or toppled |
+| `share_opened`, `share_sent` | The share card was opened (`kind`: castle, garden, battle or tray; `via`), and something was shared (`method`: `picture`, `save`, `link_sheet`, `link_copy`, or `app_sheet` / `app_copy` from the start screen) |
+| `castle_link_opened`, `castle_link_choice`, `castle_link_bad` | Someone opened a castle link (pieces, flags, moats, how much it was shrunk, whether it was turned), chose to build it over their saved castle or keep theirs, or opened a damaged link |
+| `tray_save_failed`, `tray_restore_failed` | Saving or loading a tray didn't work (for example, storage full or turned off) |
 
 Every event carries `clear_variant`. To compare the variants in PostHog, make a Trends insight on `garden_clear_followup`, broken down by `clear_variant`, and compare the share with `kept_playing = true` (and `left_app = true`). Keep whichever variant leaves fewer people disengaged.
