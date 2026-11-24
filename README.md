@@ -38,6 +38,23 @@ There is no snapping: pieces land exactly where you put them. What happens next 
 
 **Undo** in the ribbon takes back the last piece, flag or moat (up to six steps). On a computer: click to place, drag for walls and stairs, scroll to turn a piece, Shift+scroll to resize it, R to rotate, Esc to put the piece down.
 
+### Daily challenge
+
+The start screen shows **today's challenge**, one Castle Builder goal a day, the same for everyone. It's picked from the local date, so there's no server: each round of eight challenges is shuffled (the same shuffle for everyone) and the same challenge never comes up two days running. Add `#daily` to the URL to jump straight into it.
+
+| Challenge | Score |
+| --- | --- |
+| Build the tallest tower | Height above the tray's sand, in cm |
+| Build the longest wall | End-to-end length of one connected build |
+| Build a village of towers | Separate buildings at least 8 cm tall |
+| Fly flags on five buildings | Buildings with a standing flag on them |
+| Build the biggest castle | Litres of packed sand |
+| Dig the longest moat | Length of channel dug |
+| Build a castle on an island | Litres of castle inside a closed moat |
+| Build a castle that survives a quake | Litres still standing after **Shake test** |
+
+Scores are measured from the sand itself, on a sandbox scale (1 css px = 0.25 cm, so the castle tray's sand is about 5.5 cm deep). A score counts once it has stood for 1.5 seconds, so a tower that topples doesn't count. Goals for length and volume scale with the tray, so a tablet isn't harder than a phone. The pill at the top shows your best against the goal; tap it for details, **Share** and **Change mode**. Your best for each day and your streak are kept on the device (`sandtray.daily` in localStorage), and the challenge tray is saved apart from your free-build castle.
+
 ## What you can do
 
 | Tool | What it does |
@@ -92,6 +109,7 @@ Events go to [PostHog](https://posthog.com) (free tier). Analytics are off until
 | `garden_clear_tapped`, `garden_clear_cancelled`, `garden_clear_done`, `garden_clear_undone` | The Clear flow |
 | `garden_clear_followup` | One minute after a clear, or as soon as the user leaves the app: `kept_playing`, `interactions_60s`, `first_interaction_s`, `left_app`, `left_after_s`, `items_placed_after`, `undone` |
 | `mode_selected` | A mode was picked on the start screen (`mode`, `from`) |
+| `daily_started`, `daily_completed`, `daily_ended`, `daily_shared`, `daily_panel_opened`, `daily_quake_test` | The daily challenge: `challenge`, `day` (challenge number), `best`, `goal`, `done`, `streak`; `daily_ended` has `reason` (`left`, `app_hidden`) |
 | `castle_ribbon_opened`, `castle_piece_placed`, `castle_flag_planted`, `castle_moat_dug`, `castle_undo` | Castle Builder use. `castle_piece_placed` says which piece and how many pieces stood, sagged, broke or toppled |
 
 Every event carries `clear_variant`. To compare the variants in PostHog, make a Trends insight on `garden_clear_followup`, broken down by `clear_variant`, and compare the share with `kept_playing = true` (and `left_app = true`). Keep whichever variant leaves fewer people disengaged.
