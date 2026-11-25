@@ -230,6 +230,56 @@ body.mode-battle.bphase-build #toast{top:calc(126px + env(safe-area-inset-top,0p
 #bCover button[hidden]{display:none;}
 #bCover #bcShare:not([hidden]){display:inline-flex;align-items:center;gap:6px;}
 @media (prefers-reduced-motion:reduce){#bBanner{transition:none}}
+/* Start screen scrolls from the top when the cards don't fit (centering an overflowing column hides its top) */
+#modes{justify-content:flex-start;}
+#modes>:first-child{margin-top:auto;}
+#modes>:last-child{margin-bottom:auto;}
+/* Daily challenge: a card on the start screen, a pill at the top of the tray while it runs */
+#dCard{appearance:none;width:100%;max-width:614px;box-sizing:border-box;display:flex;align-items:center;gap:14px;padding:13px 14px 13px 16px;border-radius:20px;border:1px solid rgba(240,200,140,.42);background:linear-gradient(120deg,rgba(240,200,140,.2),rgba(36,29,22,.66) 60%);-webkit-backdrop-filter:blur(20px) saturate(1.3);backdrop-filter:blur(20px) saturate(1.3);color:var(--ink);text-align:left;cursor:pointer;touch-action:manipulation;box-shadow:0 14px 40px rgba(0,0,0,.4);transition:transform .15s,border-color .15s;}
+#dCard:hover,#dCard:focus-visible{transform:translateY(-2px);border-color:rgba(240,200,140,.75);outline:none;}
+#dCard:active{transform:scale(.985);}
+#dCard .dic{flex:none;width:44px;height:44px;border-radius:14px;display:flex;align-items:center;justify-content:center;background:rgba(240,200,140,.18);color:var(--accent);}
+#dCard .dic svg,#daily svg{width:24px;height:24px;stroke:currentColor;fill:none;stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round;}
+#dCard .dtx{flex:1;min-width:0;display:flex;flex-direction:column;gap:3px;}
+#dCard .dk{font:700 10.5px/1.2 var(--font);letter-spacing:.07em;text-transform:uppercase;color:var(--accent);}
+#dCard .dt{font:700 16.5px/1.25 var(--font);}
+#dCard .ds{font:500 12.5px/1.35 var(--font);color:var(--ink-dim);}
+#dCard .dgo{flex:none;padding:9px 14px;border-radius:999px;background:var(--accent);color:#2a1f14;font:700 13px/1 var(--font);}
+@media (max-width:660px){#dCard{max-width:300px;padding:12px 12px 12px 13px;gap:11px}#dCard .dic{width:38px;height:38px}}
+#dCard.done{border-color:rgba(150,205,140,.5);}
+#dCard.done .dgo{background:rgba(240,200,140,.18);color:var(--accent);}
+#daily{position:fixed;z-index:6;left:50%;transform:translateX(-50%);top:calc(14px + env(safe-area-inset-top,0px));width:min(340px,calc(100vw - 132px));box-sizing:border-box;}
+#daily[hidden]{display:none;}
+#dPill{appearance:none;width:100%;display:flex;align-items:center;gap:8px;padding:6px 12px 6px 9px;min-height:40px;box-sizing:border-box;border-radius:20px;border:1px solid var(--line);background:var(--glass);-webkit-backdrop-filter:blur(16px);backdrop-filter:blur(16px);color:var(--ink);cursor:pointer;touch-action:manipulation;text-align:left;}
+#dPill:focus-visible{outline:2px solid var(--accent);outline-offset:1px;}
+#dPill svg{width:19px;height:19px;flex:none;color:var(--accent);}
+#dPill .pt{flex:1;min-width:0;display:flex;flex-direction:column;gap:4px;}
+#dPill .pl{display:flex;justify-content:space-between;gap:6px;font:600 12px/1.1 var(--font);white-space:nowrap;}
+#dPill .pl span{overflow:hidden;text-overflow:ellipsis;}
+#dPill .pl b{font-weight:700;color:var(--accent);font-variant-numeric:tabular-nums;}
+#dPill .pb{height:4px;border-radius:2px;background:rgba(255,238,214,.14);overflow:hidden;}
+#dPill .pb i{display:block;height:100%;width:0;border-radius:2px;background:var(--accent);transition:width .5s;}
+#daily.done #dPill{border-color:rgba(150,205,140,.55);}
+#daily.done #dPill .pb i{background:#a6d49a;}
+#daily.pop #dPill{animation:dpop .7s ease-out;}
+@keyframes dpop{30%{transform:scale(1.06);background:rgba(240,200,140,.32);}}
+#dPanel{margin-top:6px;padding:14px 14px 12px;border-radius:18px;border:1px solid var(--line);background:var(--glass-hi);-webkit-backdrop-filter:blur(22px) saturate(1.3);backdrop-filter:blur(22px) saturate(1.3);box-shadow:0 14px 40px rgba(0,0,0,.45);display:flex;flex-direction:column;gap:8px;}
+#dPanel[hidden]{display:none;}
+#dPanel h2{margin:0;font:700 16px/1.25 var(--font);}
+#dPanel .dk{font:700 10.5px/1.2 var(--font);letter-spacing:.07em;text-transform:uppercase;color:var(--accent);}
+#dPanel p{margin:0;font:500 12.5px/1.4 var(--font);color:var(--ink-dim);}
+#dPanel .dst{display:flex;gap:6px;}
+#dPanel .dst div{flex:1;padding:7px 8px;border-radius:12px;background:rgba(10,8,6,.3);display:flex;flex-direction:column;gap:3px;}
+#dPanel .dst span{font:600 10px/1 var(--font);letter-spacing:.05em;text-transform:uppercase;color:var(--ink-dim);}
+#dPanel .dst b{font:700 15px/1.1 var(--font);font-variant-numeric:tabular-nums;}
+#dPanel .dbt{display:flex;gap:6px;flex-wrap:wrap;}
+#dPanel .dbt button{appearance:none;flex:1;min-width:84px;padding:10px 10px;border-radius:999px;border:1px solid var(--line);background:transparent;color:var(--ink);font:600 13px/1 var(--font);cursor:pointer;touch-action:manipulation;}
+#dPanel .dbt button.pri{background:var(--accent);border-color:var(--accent);color:#2a1f14;font-weight:700;}
+#dPanel .dbt button[hidden]{display:none;}
+#dPanel .dbt button:disabled{opacity:.5;cursor:default;}
+body.daily-on #hint{top:calc(66px + env(safe-area-inset-top,0px));}
+body.daily-on #toast{top:calc(112px + env(safe-area-inset-top,0px));}
+@media (prefers-reduced-motion:reduce){#daily.pop #dPill{animation:none}#dPill .pb i{transition:none}}
 </style>
 </head>
 <body>
@@ -239,6 +289,17 @@ body.mode-battle.bphase-build #toast{top:calc(126px + env(safe-area-inset-top,0p
 <button id="btnShare" hidden title="Share" aria-label="Share a picture of your tray"><svg viewBox="0 0 24 24"><path d="M12 14.5V3.5M8 7l4-3.8L16 7"/><path d="M8.5 10H7a2 2 0 0 0-2 2v7a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-7a2 2 0 0 0-2-2h-1.5"/></svg></button>
 <div id="hint">Draw with your finger. Tilt or shake your phone.</div>
 <div id="toast" role="status"></div>
+<div id="daily" hidden>
+  <button id="dPill" aria-expanded="false" aria-controls="dPanel"><svg viewBox="0 0 24 24"><path d="M7.5 4h9v5a4.5 4.5 0 0 1-9 0z"/><path d="M7.5 6H4.5a3 3 0 0 0 3 4M16.5 6h3a3 3 0 0 1-3 4"/><path d="M12 13.5V17M8.5 20h7M9.5 17h5v3h-5z"/></svg><div class="pt"><div class="pl"><span id="dPName"></span><b id="dPVal"></b></div><div class="pb"><i id="dPBar"></i></div></div></button>
+  <div id="dPanel" role="dialog" aria-labelledby="dHTitle" hidden>
+    <div class="dk" id="dHKick"></div>
+    <h2 id="dHTitle"></h2>
+    <p id="dHText"></p>
+    <div class="dst"><div><span>Goal</span><b id="dHGoal"></b></div><div><span>Now</span><b id="dHNow"></b></div><div><span>Best</span><b id="dHBest"></b></div></div>
+    <p id="dHNote"></p>
+    <div class="dbt"><button id="dHTest" class="pri" hidden>Shake test</button><button id="dHShare">Share</button><button id="dHEnd">Change mode</button></div>
+  </div>
+</div>
 <div id="pad" hidden aria-label="Tilt pad"><div id="puck"></div><span>Tilt</span></div>
 <nav id="bar" aria-label="Sand tools">
   <button class="tool on" data-tool="finger" aria-pressed="true" title="Finger: draw and dig">
@@ -284,6 +345,7 @@ body.mode-battle.bphase-build #toast{top:calc(126px + env(safe-area-inset-top,0p
 <div id="modes" role="dialog" aria-modal="true" aria-labelledby="mTitle" hidden>
   <h1 id="mTitle">Sandtray</h1>
   <p class="msub">How do you want to play?</p>
+  <button id="dCard" type="button"><div class="dic"><svg viewBox="0 0 24 24"><path d="M7.5 4h9v5a4.5 4.5 0 0 1-9 0z"/><path d="M7.5 6H4.5a3 3 0 0 0 3 4M16.5 6h3a3 3 0 0 1-3 4"/><path d="M12 13.5V17M8.5 20h7M9.5 17h5v3h-5z"/></svg></div><div class="dtx"><span class="dk" id="dCKick">Daily challenge</span><span class="dt" id="dCTitle"></span><span class="ds" id="dCSub"></span></div><span class="dgo" id="dCGo">Play</span></button>
   <div class="mcards">
     <button class="mcard" data-mode="zen"><canvas width="1" height="1"></canvas><div class="mbody"><b>Zen Garden <i hidden>Playing</i></b><span>Rake calm patterns and arrange stones, moss, a lantern and a cherry tree.</span></div></button>
     <button class="mcard" data-mode="castle"><canvas width="1" height="1"></canvas><div class="mbody"><b>Castle Builder <i hidden>Playing</i></b><span>Build towers, long walls and new levels from the tray's own sand. Add flags and a moat.</span></div></button>
@@ -4097,6 +4159,7 @@ function showModes(on){
       i.textContent = cur ? 'Playing' : 'Saved'; i.hidden=!(cur||saved); });
     mNote.textContent = mode ? 'Your garden and castle trays are saved on this device. Castle Battle starts fresh.' : '';
     mClose.hidden=!mode;
+    dailyCard();
     if(ribbonOpen) openRibbon(false); if(menuOpen) openMenu(false); setCastleMode(false);
     if(mode){ const cur=modesEl.querySelector(`.mcard[data-mode="${mode}"]`); cur && cur.focus({preventScroll:true}); }
   } else {
@@ -4106,7 +4169,7 @@ function showModes(on){
 modesEl.querySelectorAll('.mcard').forEach(c=>c.addEventListener('click',()=>{
   firstInteraction(); if(isTouch) requestMotionPermission();
   const m=c.dataset.mode;
-  if(m===mode){ showModes(false); return; }
+  if(m===mode && !daily.active){ showModes(false); return; }   // during the daily, Castle Builder means free build
   stripCastleHash();
   applyMode(m,'start_screen');
 }));
@@ -4115,7 +4178,9 @@ btnHome.addEventListener('click',()=>{ noteInteraction(); showModes(true); });
 addEventListener('keydown',e=>{ if(e.key==='Escape' && mode && !modesEl.hidden && !modesEl.classList.contains('gone')) showModes(false); });
 // opt.fresh: don't restore the saved tray for this mode
 function applyMode(m, via, opt){
-  if(mode && mode!==m) saveTray();
+  const toDaily = m==='castle' && via==='daily';
+  if(mode && (mode!==m || daily.active || toDaily)) saveTray();   // the daily keeps its own saved tray
+  dailySetActive(toDaily, via);
   const prev=mode; mode=m;
   if(prev==='battle') stopBattle(m===prev ? 'restart' : 'left');
   document.body.classList.toggle('mode-castle',m==='castle'); document.body.classList.toggle('mode-zen',m==='zen'); document.body.classList.toggle('mode-battle',m==='battle');
@@ -4209,6 +4274,292 @@ addEventListener('resize',onResize);
 screen.orientation && screen.orientation.addEventListener && screen.orientation.addEventListener('change',onResize);
 addEventListener('orientationchange',onResize);
 document.addEventListener('visibilitychange',()=>{ if(document.visibilityState==='visible'&&wakeLock===null&&started){ try{ navigator.wakeLock&&navigator.wakeLock.request('screen').then(w=>wakeLock=w).catch(()=>{}); }catch(e){} } if(audio){ document.hidden?audio.ctx.suspend():soundOn&&audio.ctx.resume(); } });
+
+/* ------------------------------------------------------------------ */
+/* Daily challenge                                                     */
+/* ------------------------------------------------------------------ */
+// One Castle Builder challenge a day, the same for everyone: it is picked from the local calendar date,
+// so there is no server. Scores are measured from the sand itself (an async readback of the height
+// texture about twice a second), and a score only counts once it has stood for STAND_S seconds, so a
+// tower that topples straight away doesn't count. Sizes use a sandbox scale: 1 css px = 0.25 cm, which
+// makes the sand in the castle tray about 5.5 cm deep and a phone-sized tray about a metre across.
+const DAILY_EPOCH = Date.UTC(2026,10,24);   // the day of challenge #1
+const CM_PER_PX = 0.25;
+const STAND_S = 1.5;
+const DAILY_KEY = 'sandtray.daily', DAILY_TRAY_KEY = 'sandtray.tray.daily';
+const dU = ()=>cs*CM_PER_PX;                 // cm per sim cell (heights are in cells too)
+const dTrayCm = ()=>[natW*CM_PER_PX, natH*CM_PER_PX];
+const dTrayLitres = ()=>NX*NY*cells.h0*trayDepth()*Math.pow(dU(),3)/1000;
+const roundTo = (v,s)=>Math.max(s, Math.round(v/s)*s);
+// fmt: how a score reads; goal(): the target for this tray (lengths and volumes scale with the tray)
+const DAILY = [
+  { id:'tallest', title:'Build the tallest tower', pill:'Tallest tower',
+    text:'Stack towers and levels as high as they will go. Height is measured from the sand of the tray.',
+    goal:()=>50, fmt:v=>`${Math.round(v)}\u00a0cm`, measure:S=>{ let m=0; for(let i=0;i<S.h.length;i++) if(S.h[i]>m) m=S.h[i]; return m*dU(); } },
+  { id:'wall', title:'Build the longest wall', pill:'Longest wall',
+    text:'One connected wall or castle, measured end to end in a straight line.',
+    goal:()=>roundTo(Math.hypot(...dTrayCm())*0.75,10), fmt:v=>`${Math.round(v)}\u00a0cm`, measure:S=>{ let m=0; for(const c of dComps(S)) m=Math.max(m,c.span); return m*dU(); } },
+  { id:'village', title:'Build a village of towers', pill:'Village',
+    text:'Build as many separate buildings as you can. Each one needs to stand at least 8 cm tall and must not touch the others.',
+    goal:()=>12, fmt:v=>`${Math.round(v)}\u00a0building${Math.round(v)===1?'':'s'}`, unit:v=>`${Math.round(v)}`,
+    measure:S=>dComps(S).filter(c=>c.peak*dU()>=8).length },
+  { id:'flags', title:'Fly flags on five buildings', pill:'Flags flying',
+    text:'Plant a flag on top of different buildings. Flags only count while they stand, and only one per building.',
+    goal:()=>5, fmt:v=>`${Math.round(v)}\u00a0flag${Math.round(v)===1?'':'s'}`, unit:v=>`${Math.round(v)}`,
+    measure:S=>{ dComps(S); const got=new Set();
+      for(const f of flags){ if(f.st!=='up') continue; const x=Math.floor(f.x), y=Math.floor(f.y);
+        for(let oy=-1;oy<=1;oy++) for(let ox=-1;ox<=1;ox++){ const xx=x+ox, yy=y+oy; if(xx<0||yy<0||xx>=NX||yy>=NY) continue; const l=S.lab[yy*NX+xx]; if(l>=0) got.add(l); } }
+      return got.size; } },
+  { id:'big', title:'Build the biggest castle', pill:'Biggest castle',
+    text:'Pack as much sand into castles as you can. Everything you build counts, measured in litres of packed sand.',
+    goal:()=>roundTo(dTrayLitres()*0.2,1), fmt:v=>`${v.toFixed(1)}\u00a0L`,
+    measure:S=>{ let v=0; for(let i=0;i<S.h.length;i++) v+=S.h[i]; return v*Math.pow(dU(),3)/1000; } },
+  { id:'moat', title:'Dig the longest moat', pill:'Moat length',
+    text:'Pick Moat from the castle pieces and dig. Every bit of channel you dig counts, even if the water runs out.',
+    goal:()=>roundTo((dTrayCm()[0]+dTrayCm()[1])*2,10), fmt:v=>`${Math.round(v)}\u00a0cm`,
+    measure:S=>{ let n=0; for(let i=0;i<NX*NY;i++) if(waterM[i*4]>0.3) n++; return n*cs*cs/(2*P.moatRPx)*CM_PER_PX; } },
+  { id:'island', title:'Build a castle on an island', pill:'Island castle',
+    text:'Ring a castle with a moat so it stands on an island. Only sand built inside a closed moat counts.',
+    goal:()=>roundTo(dTrayLitres()*0.04,0.5), fmt:v=>`${v.toFixed(1)}\u00a0L`,
+    measure:S=>{
+      // flood the tray from its edges without crossing the dug moat: built sand the flood never reaches is on an island
+      if(!S.any) return 0;
+      const n=NX*NY, seen=new Uint8Array(n), q=new Int32Array(n); let qh=0, qt=0;
+      const moat=i=>waterM[i*4]>0.3, push=i=>{ if(!seen[i] && !moat(i)){ seen[i]=1; q[qt++]=i; } };
+      for(let x=0;x<NX;x++){ push(x); push((NY-1)*NX+x); } for(let y=0;y<NY;y++){ push(y*NX); push(y*NX+NX-1); }
+      while(qh<qt){ const i=q[qh++], x=i%NX; if(x>0) push(i-1); if(x<NX-1) push(i+1); if(i>=NX) push(i-NX); if(i<n-NX) push(i+NX); }
+      let v=0; for(let i=0;i<n;i++) if(!seen[i] && !moat(i)) v+=S.h[i];
+      return v*Math.pow(dU(),3)/1000; } },
+  { id:'quake', title:'Build a castle that survives a quake', pill:'Quake-proof',
+    text:'Build, then tap Shake test for a short, sharp quake. Your score is how much castle still stands once the sand settles. Low, wide builds hold up best.',
+    goal:()=>roundTo(dTrayLitres()*0.015,0.5), fmt:v=>`${v.toFixed(1)}\u00a0L`, test:true,
+    measure:S=>{ let v=0; for(let i=0;i<S.h.length;i++) v+=S.h[i]; return v*Math.pow(dU(),3)/1000; } },
+];
+// standing height above the tray's own sand, packed (built) sand only; moat banks don't count
+function dScan(d){
+  const n=NX*NY, base=cells.h0*trayDepth(), thr=0.4*cells.h0, h=new Float32Array(n); let any=false;
+  for(let i=0;i<n;i++){ const j=i*4; if(waterM[j]>0.3) continue; const w=Math.min(Math.max(d[j+3],0),d[j])-base; if(w>thr){ h[i]=w; any=true; } }
+  return {h, any, comps:null, lab:null};
+}
+// separate buildings: 4-connected pieces of built sand, with their peak and their end-to-end span
+function dComps(S){
+  if(S.comps) return S.comps;
+  const n=NX*NY, lab=new Int32Array(n).fill(-1), q=new Int32Array(n), comps=[];
+  if(S.any) for(let s=0;s<n;s++){
+    if(!(S.h[s]>0) || lab[s]>=0) continue;
+    const id=comps.length, c={peak:0, cells:0, span:0}; let qh=0, qt=0; q[qt++]=s; lab[s]=id;
+    let x0=1e9,x1=-1e9,y0=1e9,y1=-1e9,p0=1e9,p1=-1e9,m0=1e9,m1=-1e9;
+    while(qh<qt){
+      const i=q[qh++], x=i%NX, y=(i/NX)|0; c.cells++; if(S.h[i]>c.peak) c.peak=S.h[i];
+      x0=Math.min(x0,x); x1=Math.max(x1,x); y0=Math.min(y0,y); y1=Math.max(y1,y); p0=Math.min(p0,x+y); p1=Math.max(p1,x+y); m0=Math.min(m0,x-y); m1=Math.max(m1,x-y);
+      const nb=[x>0?i-1:-1, x<NX-1?i+1:-1, y>0?i-NX:-1, y<NY-1?i+NX:-1];
+      for(const j of nb) if(j>=0 && S.h[j]>0 && lab[j]<0){ lab[j]=id; q[qt++]=j; }
+    }
+    if(c.cells<6){ for(let k=0;k<qt;k++) lab[q[k]]=-2; continue; }   // crumbs, not a building
+    c.span=Math.max(x1-x0, y1-y0, (p1-p0)/Math.SQRT2, (m1-m0)/Math.SQRT2)+1;
+    comps.push(c);
+  }
+  S.lab=lab; S.comps=comps; return comps;
+}
+
+const dailyStore = {
+  load(){ try{ const o=JSON.parse(localStorage.getItem(DAILY_KEY)||'{}'); return (o && typeof o==='object' && o.days) ? o : {days:{}}; }catch(e){ return {days:{}}; } },
+  save(o){
+    const keys=Object.keys(o.days).sort(); while(keys.length>90) delete o.days[keys.shift()];   // about three months of history
+    try{ localStorage.setItem(DAILY_KEY, JSON.stringify(o)); }catch(e){}
+  },
+};
+let dailyDateOverride=null;                                     // tests: __sand.daily.setDate('2026-12-01')
+function dailyToday(){
+  const t=dailyDateOverride ? new Date(dailyDateOverride+'T12:00:00') : new Date();
+  const y=t.getFullYear(), m=t.getMonth(), d=t.getDate();
+  const num=Math.round((Date.UTC(y,m,d)-DAILY_EPOCH)/864e5)+1;
+  return { key:`${y}-${String(m+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`, num, ch:dailyPick(num) };
+}
+// the order runs through every challenge before any repeats; it is reshuffled each round (seeded by the
+// round, so everyone gets the same order) and never puts the same challenge on two days in a row
+function dailyOrder(r){
+  const ids=DAILY.map((_,i)=>i); if(r===0) return ids;
+  const rnd=mulberry(Math.imul(r+1,0x9E3779B1)>>>0); for(let i=0;i<4;i++) rnd();
+  for(let i=ids.length-1;i>0;i--){ const j=Math.floor(rnd()*(i+1)); [ids[i],ids[j]]=[ids[j],ids[i]]; }
+  const prev=dailyOrder(r-1); if(ids[0]===prev[prev.length-1]) [ids[0],ids[1]]=[ids[1],ids[0]];
+  return ids;
+}
+function dailyPick(num){ const N=DAILY.length, k=num-1, r=Math.floor(k/N); return DAILY[dailyOrder(Math.max(0,r))[((k%N)+N)%N]]; }
+function dailyStreak(o){
+  // days in a row with the challenge done, counting today only once it is done
+  const t=dailyDateOverride ? new Date(dailyDateOverride+'T12:00:00') : new Date();
+  const key=dt=>`${dt.getFullYear()}-${String(dt.getMonth()+1).padStart(2,'0')}-${String(dt.getDate()).padStart(2,'0')}`;
+  let n=0; const dt=new Date(t.getFullYear(),t.getMonth(),t.getDate(),12);
+  if(!(o.days[key(dt)]||{}).done) dt.setDate(dt.getDate()-1);
+  while((o.days[key(dt)]||{}).done){ n++; dt.setDate(dt.getDate()-1); }
+  return n;
+}
+
+const daily = { active:false, today:null, ch:null, goal:0, best:0, now:0, done:false, samples:[], t0:0, via:null, testing:false };
+const dailyEl=$('#daily'), dPill=$('#dPill'), dPanel=$('#dPanel'), dCard=$('#dCard'), dHTest=$('#dHTest');
+function dailyEntry(o){ const t=daily.today; let e=o.days[t.key]; if(!e || e.id!==t.ch.id) e=o.days[t.key]={id:t.ch.id, best:0, done:false}; return e; }
+
+// Called first thing in applyMode: the daily runs as Castle Builder started with via 'daily'.
+// The tray-saving code reads dailyChallenge.active to keep the daily's tray apart from the free-build one.
+function dailySetActive(on, via){
+  if(daily.active && !on) dailyEnd(via==='api' ? 'api' : 'left');
+  if(!on) return;
+  if(daily.active) dailyEnd('restart');
+  const o=dailyStore.load(); daily.today=dailyToday(); daily.ch=daily.today.ch;
+  // yesterday's challenge tray never comes back
+  if(o.trayDay!==daily.today.key){ try{ localStorage.removeItem(DAILY_TRAY_KEY); }catch(e){} o.trayDay=daily.today.key; }
+  const e=dailyEntry(o);
+  if(!(e.goal>0)) e.goal=daily.ch.goal();                         // fixed for the day once you've seen it
+  dailyStore.save(o);
+  Object.assign(daily, {active:true, goal:e.goal, best:e.best||0, done:!!e.done, now:0, samples:[], t0:performance.now(), testing:false});
+  document.body.classList.add('daily-on'); dailyEl.hidden=false; dailyPanel(false); dailyRender();
+  analytics.track('daily_started', {challenge:daily.ch.id, day:daily.today.num, via:daily.via||'start_screen', best:+daily.best.toFixed(2), done:daily.done, streak:dailyStreak(o)});
+}
+function dailyEnd(reason){
+  if(!daily.active) return;
+  analytics.track('daily_ended', {challenge:daily.ch.id, day:daily.today.num, reason, best:+daily.best.toFixed(2), goal:daily.goal, done:daily.done, play_s:Math.round((performance.now()-daily.t0)/1000)});
+  daily.active=false; daily.testing=false; dRead.pending=null;
+  document.body.classList.remove('daily-on'); dailyEl.hidden=true; dailyPanel(false); dailyCard();
+}
+function dailyStart(via){
+  if(daily.active && mode==='castle'){ showModes(false); return; }
+  daily.via=via; applyMode('castle','daily');
+  hint.textContent=`Today: ${daily.ch.title.charAt(0).toLowerCase()+daily.ch.title.slice(1)}. ${isTouch?'Tap':'Click'} Castle to start.`;
+}
+
+// ---- measuring: async readback so it never stalls a frame ----
+const dRead={pbo:gl.createBuffer(), n:0, buf:null, fence:null, pending:null, last:0};
+function dailyFrame(now){
+  if(!daily.active) return;
+  if(daily.testing){ dailyQuakeStep(); return; }
+  if(dRead.fence){
+    const st=gl.clientWaitSync(dRead.fence,0,0);
+    if(st!==gl.ALREADY_SIGNALED && st!==gl.CONDITION_SATISFIED) return;
+    gl.deleteSync(dRead.fence); dRead.fence=null;
+    if(dRead.pending===NX*NY){
+      gl.bindBuffer(gl.PIXEL_PACK_BUFFER,dRead.pbo); gl.getBufferSubData(gl.PIXEL_PACK_BUFFER,0,dRead.buf); gl.bindBuffer(gl.PIXEL_PACK_BUFFER,null);
+      dailySample(dRead.buf, now);
+    }
+    dRead.pending=null; return;
+  }
+  if(now-dRead.last<500) return;
+  dRead.last=now;
+  const n=NX*NY;
+  gl.bindBuffer(gl.PIXEL_PACK_BUFFER,dRead.pbo);
+  if(dRead.n!==n){ dRead.n=n; dRead.buf=new Float32Array(n*4); gl.bufferData(gl.PIXEL_PACK_BUFFER,n*16,gl.STREAM_READ); }
+  gl.bindFramebuffer(gl.FRAMEBUFFER,fA[0]); gl.readPixels(0,0,NX,NY,gl.RGBA,gl.FLOAT,0);
+  gl.bindBuffer(gl.PIXEL_PACK_BUFFER,null);
+  dRead.pending=n; dRead.fence=gl.fenceSync(gl.SYNC_GPU_COMMANDS_COMPLETE,0); gl.flush();
+}
+function dailyMeasure(d){ return daily.ch.measure(dScan(d||readTex(fA[0]))); }
+function dailySample(d, now){
+  const v=dailyMeasure(d); daily.now=v;
+  if(!daily.ch.test){
+    // a score counts once it has stood for STAND_S seconds: the lowest reading over that window
+    const S=daily.samples; S.push([now,v]); while(S.length>2 && S[1][0]<=now-STAND_S*1000) S.shift();
+    if(S[0][0]<=now-STAND_S*1000) dailyScore(Math.min(...S.map(s=>s[1])), 'stood');
+  }
+  dailyRender();
+}
+function dailyScore(v, how){
+  if(!(v>daily.best+1e-6)){ dailyRender(); return; }
+  daily.best=v;
+  const o=dailyStore.load(), e=dailyEntry(o); e.best=Math.max(e.best||0,v);
+  const justDone=!daily.done && v>=daily.goal-1e-6;
+  if(justDone){ daily.done=e.done=true; e.done_s=Math.round((performance.now()-daily.t0)/1000); }
+  dailyStore.save(o);
+  if(justDone){
+    analytics.track('daily_completed', {challenge:daily.ch.id, day:daily.today.num, score:+v.toFixed(2), goal:daily.goal, play_s:e.done_s, streak:dailyStreak(o), via:how});
+    dailyEl.classList.remove('pop'); void dailyEl.offsetWidth; dailyEl.classList.add('pop');
+    toast(`Challenge complete: ${daily.ch.fmt(v)}! Share it, or keep going to beat your best.`);
+    flagSound(); try{ navigator.vibrate && navigator.vibrate([20,60,20,60,40]); }catch(e2){}
+  }
+  dailyRender();
+}
+// Quake test: a short, sharp shake, then wait (in sim time, so slow devices get the same quake) until
+// the sand stops moving, and score what still stands
+function dailyQuake(){
+  if(!daily.active || daily.testing) return;
+  dailyPanel(false);
+  daily.testing={t0:simTime, before:dailyMeasure(), last:null, lastT:simTime};
+  dailyRender(); toast('Shaking the tray…'); shakeT=0.6; noteInteraction();
+}
+function dailyQuakeStep(){
+  const q=daily.testing, el=simTime-q.t0;
+  if(el<2.5 || simTime-q.lastT<1) return;
+  q.lastT=simTime; const v=dailyMeasure(), settled=q.last!=null && Math.abs(v-q.last)<=Math.max(0.02,0.02*q.last); q.last=v;
+  if(!settled && el<20) return;
+  daily.testing=false; daily.now=v;
+  analytics.track('daily_quake_test', {day:daily.today.num, before:+q.before.toFixed(2), after:+v.toFixed(2), settle_s:+el.toFixed(1)});
+  const wasDone=daily.done, nb=v>daily.best+1e-6 && daily.best>0;
+  dailyScore(v,'test');
+  if(daily.done && !wasDone) return;                                  // the completion toast says it
+  toast(v<0.05 ? 'Nothing survived the quake. Build something lower and wider, and try again.'
+    : `${daily.ch.fmt(v)} still standing${nb ? ', a new best' : ''}.${v<daily.goal ? ` The goal is ${daily.ch.fmt(daily.goal)}.` : ''}`);
+}
+
+// ---- UI ----
+function dailyPanel(on){
+  dPanel.hidden=!on; dPill.setAttribute('aria-expanded', on);
+  if(on){ dailyRender(); analytics.track('daily_panel_opened', {challenge:daily.ch.id}); }
+}
+function dailyRender(){
+  if(!daily.active) return;
+  const c=daily.ch, f=c.fmt, unit=c.unit||f;
+  dailyEl.classList.toggle('done', daily.done);
+  $('#dPName').textContent=c.pill;
+  $('#dPVal').textContent = daily.testing ? 'Shaking…' : c.unit ? `${unit(daily.best)} / ${f(daily.goal)}` : `${f(daily.best).replace(/\u00a0.*/,'')} / ${f(daily.goal)}`;
+  $('#dPBar').style.width = Math.min(100, 100*daily.best/Math.max(1e-6,daily.goal)).toFixed(1)+'%';
+  dPill.setAttribute('aria-label', `Today's challenge: ${c.title}. Best ${f(daily.best)} of ${f(daily.goal)}.${daily.done?' Complete.':''} Tap for details.`);
+  if(dPanel.hidden) return;
+  $('#dHKick').textContent=`Daily challenge #${daily.today.num}${daily.done?' · Complete':''}`;
+  $('#dHTitle').textContent=c.title; $('#dHText').textContent=c.text;
+  $('#dHGoal').textContent=f(daily.goal); $('#dHNow').textContent=f(daily.now); $('#dHBest').textContent=f(daily.best);
+  $('#dHNow').previousElementSibling.textContent = c.test ? 'Built' : 'Now';
+  $('#dHNote').textContent = daily.done ? 'Done for today. A new challenge starts at midnight.' : c.test ? 'Shake as often as you like. Your best result counts.' : 'Your best counts once it has stood for a moment.';
+  dHTest.hidden=!c.test; dHTest.disabled=!!daily.testing;
+}
+function dailyCard(){
+  const t=dailyToday(), o=dailyStore.load(), e=o.days[t.key], st=dailyStreak(o);
+  const mine = e && e.id===t.ch.id ? e : null;
+  $('#dCKick').textContent=`Daily challenge #${t.num}${st>=2 ? ` · ${st}-day streak` : ''}`;
+  $('#dCTitle').textContent=t.ch.title;
+  const goalTxt = mine && mine.goal>0 ? t.ch.fmt(mine.goal) : (NX ? t.ch.fmt(t.ch.goal()) : '');
+  $('#dCSub').textContent = mine && mine.done ? `Done with ${t.ch.fmt(mine.best)}. Beat your best?`
+    : mine && mine.best>0 ? `Your best: ${t.ch.fmt(mine.best)} of ${goalTxt}` : goalTxt ? `Goal: ${goalTxt}. A new challenge every day.` : 'A new challenge every day.';
+  $('#dCGo').textContent = daily.active ? 'Continue' : mine && (mine.best>0||mine.done) ? 'Play again' : 'Play';
+  dCard.classList.toggle('done', !!(mine && mine.done));
+  const cb=document.querySelector('.mcard[data-mode="castle"] i'); if(cb && daily.active) cb.hidden=true;   // the daily is playing, not free build
+  dCard.setAttribute('aria-label', `Today's challenge number ${t.num}: ${t.ch.title}. ${$('#dCSub').textContent}`);
+}
+function dailyShareText(){
+  if(!daily.active && !daily.today) return '';
+  const t=daily.active ? daily.today : dailyToday(), o=dailyStore.load(), e=o.days[t.key];
+  if(!e || e.id!==t.ch.id || !(e.best>0)) return daily.active ? `Sandtray daily #${t.num}: ${t.ch.title.charAt(0).toLowerCase()+t.ch.title.slice(1)}. Can you do it?` : '';
+  const st=dailyStreak(o);
+  return `Sandtray daily #${t.num} · ${t.ch.pill}: ${t.ch.fmt(e.best)}${e.done?' ✅':` of ${t.ch.fmt(e.goal)}`}${st>=2?` · ${st}-day streak 🔥`:''}`;
+}
+async function dailyShare(){
+  analytics.track('daily_shared', {challenge:daily.ch.id, day:daily.today.num, done:daily.done, best:+daily.best.toFixed(2), method: typeof window.sandShare==='function' ? 'share_card' : navigator.share ? 'web_share' : 'clipboard'});
+  if(typeof window.sandShare==='function'){ dailyPanel(false); window.sandShare('daily_pill'); return; }
+  const url=location.origin+location.pathname+'#daily', text=dailyShareText();
+  if(navigator.share){ try{ await navigator.share({title:'Sandtray', text, url}); }catch(e){} return; }
+  try{ await navigator.clipboard.writeText(`${text}\n${url}`); toast('Copied. Paste it to share today\'s challenge.'); }
+  catch(e){ toast('Couldn\'t copy. Your browser blocked the clipboard.'); }
+}
+dPill.addEventListener('click',()=>{ noteInteraction(); dailyPanel(dPanel.hidden); });
+$('#dHShare').addEventListener('click',dailyShare);
+$('#dHEnd').addEventListener('click',()=>{ dailyPanel(false); showModes(true); });
+dHTest.addEventListener('click',dailyQuake);
+dCard.addEventListener('click',()=>{ firstInteraction(); if(isTouch) requestMotionPermission(); dailyStart('start_screen'); });
+addEventListener('keydown',e=>{ if(e.key==='Escape' && !dPanel.hidden) dailyPanel(false); });
+canvas.addEventListener('pointerdown',()=>{ if(!dPanel.hidden) dailyPanel(false); });
+document.addEventListener('visibilitychange',()=>{
+  if(document.visibilityState==='hidden'){ if(daily.active) analytics.track('daily_ended', {challenge:daily.ch.id, day:daily.today.num, reason:'app_hidden', best:+daily.best.toFixed(2), goal:daily.goal, done:daily.done, play_s:Math.round((performance.now()-daily.t0)/1000)}); }
+  else dailyCard();
+});
+window.dailyChallenge = { get active(){ return daily.active; }, setActive:dailySetActive, shareText:dailyShareText, start:dailyStart };
 
 /* ------------------------------------------------------------------ */
 /* Main loop                                                           */
@@ -4577,6 +4928,11 @@ window.__sand = {
     fire(dx,dy,power){ const l=Math.hypot(dx,dy)||1; battleAct({t:'fire', p:battle.turn, ammo:battle.ammo, dir:[dx/l,dy/l], power}); },
     aim(x,y,x2,y2){ battle.aim={id:'t', s:[x,y], c:[x2,y2]}; }, release(){ battleUp({pointerId:'t', type:'pointerup'}); },
   },
+  daily:{
+    start(){ daily.via='api'; applyMode('castle','daily'); }, get state(){ return daily; }, measure(){ return dailyMeasure(); }, sample(){ dailySample(readTex(fA[0]), performance.now()); },
+    quake(){ dailyQuake(); }, setDate(k){ dailyDateOverride=k; dailyCard(); }, today:()=>dailyToday(), pick:n=>dailyPick(n).id, shareText:()=>dailyShareText(), card(){ dailyCard(); },
+    list:DAILY.map(c=>c.id),
+  },
   share:{
     get log(){ return buildLog; }, encode:l=>encodeCastle(l||buildLog), decode:t=>decodeCastle(t), link:()=>castleLink(), open:v=>openShare(v||'api'), close:()=>closeShare(),
     snapshot:()=>snapshot(), save:()=>saveTray(), restore:m=>restoreTray(m), get replaying(){ return !!replay; }, get key(){ return trayKeyCur; }, get touched(){ return trayTouched; },
@@ -4593,7 +4949,9 @@ renderThumbs();
 clearWater();
 renderPieceThumbs();
 { const hm=(location.hash.match(/mode=(zen|castle|battle)/)||[])[1], hc=(location.hash.match(/castle=([A-Za-z0-9_-]+)/)||[])[1];
-  if(hc) openCastleLink(hc); else if(hm) applyMode(hm,'link'); else showModes(true); }
+  if(hc) openCastleLink(hc); else if(/(^#|[#&])daily\b/.test(location.hash)) dailyStart('link');
+  else if(hm) applyMode(hm,'link'); else showModes(true); }
+dailyCard();
 setTimeout(renderModeCards, 30);
 let last=performance.now(), simTime=0, frameN=0, flowLevel=0, massInfo=[0,0];
 let ema=16.7, lastQualityChange=performance.now();
@@ -4666,6 +5024,7 @@ function frame(now){
   drawBattle(L);
   if(snapReq) takeSnap(L);
   probeFlags();
+  dailyFrame(now);
 
   // ---- async readback of flow for sound / haptics ----
   // (only needed for sound / haptics / debug; skipping it otherwise keeps the GPU pipeline free)
